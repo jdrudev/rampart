@@ -15,8 +15,44 @@ const { post } = Astro.props;
 const { Content } = await render(post);
 ---
 <BaseLayout title={`${post.data.title} | Rampart`} description={post.data.description}>
-  <article class="article shell"><a class="back" href={`${import.meta.env.BASE_URL}blogs/`}>← {siteCopy.posts.backLink}</a><header><p class="eyebrow">{post.data.tags.join(' / ')}</p><h1>{post.data.title}</h1><p class="article-description">{post.data.description}</p><time datetime={post.data.date.toISOString()}>{post.data.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</time></header><div class="prose"><Content /></div></article>
+  <div class="article-layout shell">
+    <aside class="toc" aria-label="On this page"><p class="toc-title">On this page</p><nav><ul id="article-toc"></ul></nav></aside>
+    <article class="article"><a class="back" href={`${import.meta.env.BASE_URL}blogs/`}>← {siteCopy.posts.backLink}</a><header><p class="eyebrow">{post.data.tags.join(' / ')}</p><h1>{post.data.title}</h1><p class="article-description">{post.data.description}</p><time datetime={post.data.date.toISOString()}>{post.data.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</time></header><div class="prose"><Content /></div></article>
+  </div>
+  <div id="copy-toast" class="copy-toast" role="status" aria-live="polite"></div>
 </BaseLayout>
+<script>
+  const article = document.querySelector<HTMLElement>('.article');
+  const toc = document.querySelector<HTMLElement>('#article-toc');
+  const toast = document.querySelector<HTMLElement>('#copy-toast');
+  const slugify = (text: string) => text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
+  const notify = (message: string) => { if (!toast) return; toast.textContent = message; toast.classList.add('visible'); window.setTimeout(() => toast.classList.remove('visible'), 1800); };
+  const copy = async (value: string) => { await navigator.clipboard.writeText(value); notify('Copied to clipboard'); };
+  if (article && toc) {
+    const headings = [...article.querySelectorAll<HTMLElement>('.prose h2, .prose h3')];
+    headings.forEach((heading, index) => {
+      heading.id ||= `${slugify(heading.textContent ?? 'section')}-${index}`;
+      const item = document.createElement('li');
+      item.dataset.level = heading.tagName === 'H3' ? '3' : '2';
+      const link = document.createElement('a');
+      link.href = `#${heading.id}`;
+      link.textContent = heading.textContent ?? '';
+      item.append(link); toc.append(item);
+    });
+    if (!headings.length) toc.closest('.toc')?.remove();
+    const observer = new IntersectionObserver((entries) => entries.forEach((entry) => { if (entry.isIntersecting) { toc.querySelectorAll('a').forEach((link) => link.classList.toggle('active', link.hash === `#${entry.target.id}`)); } }), { rootMargin: '-15% 0px -70% 0px' });
+    headings.forEach((heading) => observer.observe(heading));
+  }
+  article?.querySelectorAll<HTMLElement>('.prose pre').forEach((block) => {
+    const source = block.textContent ?? '';
+    const button = document.createElement('button'); button.className = 'copy-button'; button.type = 'button'; button.textContent = 'Copy'; button.addEventListener('click', () => copy(source)); block.append(button);
+  });
+  article?.querySelectorAll<HTMLElement>('.prose code').forEach((code) => {
+    if (code.parentElement?.tagName === 'PRE') return;
+    code.title = 'Copy code'; code.tabIndex = 0; const copyCode = () => copy(code.textContent ?? ''); code.addEventListener('click', copyCode); code.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); copyCode(); } });
+  });
+</script>
 <style>
-  .article { padding: 65px 0 110px; }.back { color: var(--muted); font: .68rem var(--mono); text-decoration: none; text-transform: uppercase; }.back:hover { color: var(--accent); }.article header { max-width: 800px; margin: 90px auto 65px; }.article h1 { margin: 20px 0; font-size: clamp(2.8rem, 6vw, 5.8rem); line-height: .98; letter-spacing: -.07em; }.article-description { color: var(--muted); font-size: 1.05rem; line-height: 1.6; }.article time { color: var(--muted); font: .68rem var(--mono); text-transform: uppercase; }.prose { max-width: 700px; margin: auto; font-size: 1.04rem; line-height: 1.8; }.prose :global(h2) { margin-top: 2.8em; font-size: 1.8rem; letter-spacing: -.05em; line-height: 1.1; }.prose :global(a) { color: var(--accent); }.prose :global(pre) { overflow-x: auto; padding: 22px; background: #080b10; border: 1px solid var(--line); color: #dce8f2; font-size: .8rem; line-height: 1.6; }.prose :global(code) { font-family: var(--mono); }.prose :global(blockquote) { margin: 2em 0; padding: 4px 0 4px 20px; border-left: 2px solid var(--accent); color: var(--muted); }
+  .article-layout { display: grid; grid-template-columns: 170px minmax(0, 700px); gap: 50px; padding: 65px 0 110px; }.article { min-width: 0; }.toc { position: sticky; top: 25px; align-self: start; margin-top: 150px; }.toc-title { margin: 0 0 14px; color: var(--muted); font: .63rem var(--mono); text-transform: uppercase; }.toc ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; border-left: 1px solid var(--line); }.toc li[data-level="3"] { padding-left: 12px; }.toc a { display: block; padding-left: 12px; color: var(--muted); font: .68rem var(--mono); line-height: 1.35; text-decoration: none; }.toc a.active, .toc a:hover { color: var(--accent); }.back { color: var(--muted); font: .68rem var(--mono); text-decoration: none; text-transform: uppercase; }.back:hover { color: var(--accent); }.article header { max-width: 800px; margin: 90px 0 65px; }.article h1 { margin: 20px 0; font-size: clamp(2.8rem, 6vw, 5.8rem); line-height: .98; letter-spacing: -.07em; }.article-description { color: var(--muted); font-size: 1.05rem; line-height: 1.6; }.article time { color: var(--muted); font: .68rem var(--mono); text-transform: uppercase; }.prose { max-width: 700px; font-size: 1.04rem; line-height: 1.8; }.prose :global(h2) { margin-top: 2.8em; font-size: 1.8rem; letter-spacing: -.05em; line-height: 1.1; }.prose :global(h3) { margin-top: 2.2em; font-size: 1.35rem; line-height: 1.2; }.prose :global(a) { color: var(--accent); }.prose :global(code) { padding: .18em .38em; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--deep); font: .84em var(--mono); cursor: pointer; }.prose :global(pre) { position: relative; overflow-x: auto; padding: 22px 58px 22px 22px; background: #080b10; border: 1px solid var(--line); color: #dce8f2; font-size: .8rem; line-height: 1.6; }.prose :global(pre code) { padding: 0; border: 0; background: transparent; cursor: text; }.copy-button { position: absolute; top: 10px; right: 10px; padding: 5px 8px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font: .62rem var(--mono); cursor: pointer; }.copy-button:hover { color: var(--ink); border-color: var(--accent); }.prose :global(blockquote) { margin: 2em 0; padding: 10px 18px; border-left: 2px solid var(--accent); color: var(--muted); }.prose :global(.callout) { position: relative; margin: 1.8em 0; padding: 16px 18px 16px 48px; border: 1px solid var(--line); background: var(--panel); }.prose :global(.callout)::before { position: absolute; top: 16px; left: 17px; width: 18px; height: 18px; border: 1px solid currentColor; border-radius: 50%; content: 'i'; text-align: center; font: 500 .72rem/18px var(--mono); }.prose :global(.callout-info)::before { content: 'i'; }.prose :global(.callout-note)::before { content: '?'; }.prose :global(.callout-success)::before { content: '✓'; }.prose :global(.callout-warning)::before { content: '!'; }.prose :global(.callout-error)::before { content: '×'; }.prose :global(.callout-info) { color: #9dc9ed; }.prose :global(.callout-note) { color: #c6b4ed; }.prose :global(.callout-success) { color: #91d3ad; }.prose :global(.callout-warning) { color: #e6c37a; }.prose :global(.callout-error) { color: #eb9494; }.prose :global(.callout > strong) { color: currentColor; font: .65rem var(--mono); text-transform: uppercase; }.prose :global(details.expand) { margin: 1.8em 0; padding: 14px 18px; border: 1px solid var(--line); background: var(--panel); }.prose :global(details.expand summary) { color: var(--accent); cursor: pointer; font-weight: 600; }.prose :global(table) { display: block; overflow-x: auto; width: 100%; border-collapse: collapse; margin: 1.8em 0; font-size: .88em; }.prose :global(th), .prose :global(td) { min-width: 120px; padding: 10px 12px; border: 1px solid var(--line); text-align: left; vertical-align: top; }.prose :global(th) { background: var(--panel); color: var(--deep); font: 500 .72rem var(--mono); text-transform: uppercase; }.copy-toast { position: fixed; right: 24px; bottom: 24px; z-index: 10; transform: translateY(12px); padding: 10px 14px; border: 1px solid var(--accent); background: var(--panel); color: var(--ink); font: .7rem var(--mono); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; }.copy-toast.visible { transform: translateY(0); opacity: 1; }
+  @media (max-width: 900px) { .article-layout { display: block; width: min(700px, calc(100% - 40px)); }.toc { display: none; } }
 </style>

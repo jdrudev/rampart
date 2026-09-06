@@ -36,6 +36,31 @@ class TransformTests(unittest.TestCase):
 
         self.assertIn("> Confluence macro omitted: `jira`", markdown)
 
+    def test_nested_headings_tasks_and_panels_are_normalized(self) -> None:
+        markdown = page_to_markdown(_page(
+            '<div><h1>Section</h1><h2>Detail</h2></div>'
+            '<ac:task-list><ac:task><ac:task-status>complete</ac:task-status>'
+            '<ac:task-body>Done task</ac:task-body></ac:task>'
+            '<ac:task><ac:task-status>incomplete</ac:task-status>'
+            '<ac:task-body>Open task</ac:task-body></ac:task></ac:task-list>'
+            '<ac:structured-macro ac:name="warning"><ac:rich-text-body>'
+            '<p>Read this carefully.</p></ac:rich-text-body></ac:structured-macro>'
+        ))
+
+        self.assertIn("## Section\n\n### Detail", markdown)
+        self.assertIn("- [x] Done task", markdown)
+        self.assertIn("- [ ] Open task", markdown)
+        self.assertIn('<div class="callout callout-warning">', markdown)
+        self.assertIn("Read this carefully.", markdown)
+
+    def test_code_macro_becomes_copyable_code_block_source(self) -> None:
+        markdown = page_to_markdown(_page(
+            '<ac:structured-macro ac:name="code"><ac:plain-text-body>'
+            '<![CDATA[print("hello")]]></ac:plain-text-body></ac:structured-macro>'
+        ))
+
+        self.assertIn('```\nprint("hello")\n```', markdown)
+
 
 if __name__ == "__main__":
     unittest.main()

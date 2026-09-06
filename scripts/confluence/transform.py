@@ -44,8 +44,13 @@ class _DocumentParser(HTMLParser):
     def handle_data(self, data: str) -> None:
         self.stack[-1].children.append(data)
 
+    def unknown_decl(self, data: str) -> None:
+        if data.startswith("CDATA["):
+            self.stack[-1].children.append(data[6:])
+
 
 UNSUPPORTED_MACROS = {"ac:structured-macro", "ac:macro"}
+BLOCK_NODES = {"p", "div", "section", "article", "blockquote", "ul", "ol", "pre", "table", "ac:task-list"}
 
 
 def _plain(node: _Node | str) -> str:
@@ -85,6 +90,8 @@ def _inline(node: _Node | str) -> str:
     if node.name == "img":
         source = _safe_url(node.attrs.get("src", ""))
         return f"![{node.attrs.get('alt', '').strip()}]({source})" if source else ""
+    if node.name in {"ac:task-id", "ac:task-status"}:
+        return ""
     return content
 
 
@@ -98,6 +105,18 @@ def _table_rows(node: _Node) -> list[list[_Node]]:
         else:
             rows.extend(_table_rows(child))
     return rows
+
+
+def _render_children(node: _Node) -> str:
+    parts: list[str] = []
+    for child in node.children:
+        if isinstance(child, _Node) and (child.name in BLOCK_NODES or child.name.startswith("h")):
+            parts.append(_render_block(child))
+        elif isinstance(child, str) and child.strip():
+            parts.append(child.strip())
+        elif isinstance(child, _Node):
+            parts.append(_inline(child).strip())
+    return "\n\n".join(part for part in parts if part)
 
 
 def _simple_table(node: _Node) -> str | None:
@@ -131,11 +150,31 @@ def _sanitized_html(node: _Node) -> str:
 def _render_block(node: _Node) -> str:
     if node.name in UNSUPPORTED_MACROS:
         macro = node.attrs.get("ac:name", "unknown")
-        return f"> Confluence macro omitted: `{macro}`"
+        body = _render_children(node).strip()
+        if macro in {"info", "note", "success", "warning", "error", "tip"}:
+            kind = "success" if macro == "tip" else macro
+            return f'<div class="callout callout-{kind}"><strong>{kind.title()}</strong>\n\n{body}</div>'
+        if macro in {"code", "noformat"}:
+            return f"```\n{_plain(node).strip()}\n```"
+        if macro == "expand":
+            return f'<details class="expand"><summary>{_inline(node).strip() or "Details"}</summary>\n\n{body}\n\n</details>'
+        return f"> Confluence macro omitted: `{macro}`\n\n{body}" if body else f"> Confluence macro omitted: `{macro}`"
+    if node.name == "ac:task-list":
+        tasks = []
+        for child in node.children:
+            if isinstance(child, _Node) and child.name == "ac:task":
+                status = next((item for item in child.children if isinstance(item, _Node) and item.name == "ac:task-status"), None)
+                body = next((item for item in child.children if isinstance(item, _Node) and item.name == "ac:task-body"), None)
+                checked = _plain(status).strip().lower() in {"complete", "completed", "done"} if status else False
+                tasks.append(f"- [{'x' if checked else ' '}] {_inline(body).strip() if body else _inline(child).strip()}")
+        return "\n".join(tasks)
     if node.name in {"p", "div", "section", "article"}:
+        if any(isinstance(child, _Node) and (child.name in BLOCK_NODES or child.name.startswith("h")) for child in node.children):
+            return _render_children(node)
         return _inline(node).strip()
     if node.name.startswith("h") and len(node.name) == 2 and node.name[1].isdigit():
-        return f"{'#' * int(node.name[1])} {_inline(node).strip()}"
+        level = min(int(node.name[1]) + 1, 6)
+        return f"{'#' * level} {_inline(node).strip()}"
     if node.name == "blockquote":
         return "\n".join(f"> {line}" for line in _inline(node).strip().splitlines())
     if node.name in {"ul", "ol"}:
