@@ -14,9 +14,9 @@ This is a blog from confluence page, in portfolio space
 
 lets test some markdown
 
-# header1
+## header1
 
-## header2
+### header2
 
 <u>underline</u>
 
@@ -38,10 +38,7 @@ Image:
 
 image end
 
-3
-1833bea8-2bcd-439e-8d3a-5d43b2fefe1d
-incomplete
-confluence action item
+- [ ] confluence action item
 
 centered text right here
 

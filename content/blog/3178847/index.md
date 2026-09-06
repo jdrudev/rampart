@@ -11,19 +11,16 @@ source_url: 'https://jdru.atlassian.net/wiki/spaces/Portfolio/pages/3178847/form
 
 Confluence Formatting SampleThis page is designed to test how native Confluence formatting transforms into Markdown. It includes headings, lists, tasks, decisions, panels, tables, expands, code, links, dates, statuses, emojis, and layout sections.1. Inline FormattingThis paragraph includes **bold text**, *italic text*, <u>underlined text</u>, ~~strikethrough text~~, `inline code`, subscript, superscript, red text, and highlighted text.Here is an emoji , a date , and a status lozenge > Confluence macro omitted: `status`.2. Links and Smart LinksUse a normal link when text needs to flow in a sentence: [Atlassian website](https://www.atlassian.com).[https://support.atlassian.com/confluence-cloud/](https://support.atlassian.com/confluence-cloud/)[https://www.atlassian.com/software/confluence](https://www.atlassian.com/software/confluence)3. ListsBullet ListFirst bullet item with supporting contextSecond bullet itemNested bullet item ANested bullet item BThird bullet itemNumbered ListPrepare sample contentRun transformation engineCompare Markdown outputTask List
 
-13
 0963670e
-complete
+
 Confirm headings convert correctly
 
-14
 48561f29
-incomplete
+
 Validate table rendering
 
-15
 1673233b
-incomplete
+
 Review panel and expand output
 
 Decision List778f191b19506487DECIDEDUse this page as the canonical formatting regression sample.153a0472UNDECIDEDDecide whether to include attachment and media examples later.Use this page as the canonical formatting regression sample.Decide whether to include attachment and media examples later.4. Panels> Confluence macro omitted: `info`note73717c2c**Note:** This note panel highlights context that should be preserved.
