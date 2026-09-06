@@ -39,6 +39,13 @@ def request(base_url: str, email: str, token: str, path: str, params: dict[str, 
         return json.load(response)
 
 
+def bearer_request(base_url: str, token: str, path: str, params: dict[str, str]) -> dict:
+    url = f"{base_url}{path}?{urlencode(params)}"
+    request = Request(url, headers={"Authorization": f"Bearer {token.strip()}", "Accept": "application/json"})
+    with urlopen(request, timeout=20) as response:
+        return json.load(response)
+
+
 def report_http_error(check: str, error: HTTPError) -> None:
     try:
         body = error.read().decode("utf-8", errors="replace")[:500]
@@ -131,7 +138,7 @@ def main() -> int:
                 if not page_id:
                     continue
                 try:
-                    attachments = request(client.api_base_url, email, token, f"/wiki/rest/api/content/{page_id}/child/attachment", {"limit": "1"})
+                    attachments = bearer_request(client.api_base_url, token, f"/wiki/api/v2/pages/{page_id}/attachments", {"limit": "1"})
                     print(f"Attachments API ({page_id}): PASS ({len(attachments.get('results', []))} sample result(s))", flush=True)
                 except HTTPError as error:
                     report_http_error(f"Attachments API ({page_id})", error)

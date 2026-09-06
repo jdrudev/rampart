@@ -35,6 +35,8 @@ class ConfluenceClient:
         self.api_base_url = f"https://api.atlassian.com/ex/confluence/{resolved_cloud_id}"
         credentials = base64.b64encode(f"{email.strip()}:{token.strip()}".encode()).decode()
         self.headers = {"Authorization": f"Basic {credentials}", "Accept": "application/json"}
+        # Scoped attachment endpoints require bearer auth; page search keeps Basic auth.
+        self.bearer_headers = {"Authorization": f"Bearer {token.strip()}", "Accept": "application/json"}
 
     def _resolve_cloud_id(self) -> str:
         try:
@@ -89,15 +91,26 @@ class ConfluenceClient:
         attachments: list[ConfluenceAttachment] = []
         start = 0
         while True:
-            payload = self._get(f"/wiki/rest/api/content/{page_id}/child/attachment", urlencode({"limit": "50", "start": str(start)}))
+            payload = self._get_attachment_json(f"/wiki/api/v2/pages/{page_id}/attachments", urlencode({"limit": "50", "start": str(start)}))
             results = payload.get("results", [])
-            attachments.extend(ConfluenceAttachment(item["id"], item["title"], item.get("metadata", {}).get("mediaType", ""), f"{self.api_base_url}{item['_links']['download']}", item.get("extensions", {}).get("fileSize", 0)) for item in results)
+            attachments.extend(ConfluenceAttachment(item["id"], item["title"], item.get("mediaType", ""), f"{self.api_base_url}/wiki/api/v2/attachments/{item['id']}/download", item.get("fileSize", 0)) for item in results)
             if len(results) < 50:
                 return attachments
             start += 50
 
+    def _get_attachment_json(self, path: str, params: str = "") -> dict:
+        url = f"{self.api_base_url}{path}{'?' + params if params else ''}"
+        try:
+            request = Request(url, headers=self.bearer_headers)
+            with urlopen(request, timeout=self.timeout) as response:
+                return json.load(response)
+        except HTTPError as error:
+            raise RuntimeError(f"Confluence attachment listing failed with HTTP {error.code} for {path}") from error
+        except URLError as error:
+            raise RuntimeError(f"Confluence attachment listing failed: {error.reason}") from error
+
     def download_attachment(self, attachment: ConfluenceAttachment) -> bytes:
-        request = Request(attachment.download_url, headers=self.headers)
+        request = Request(attachment.download_url, headers=self.bearer_headers)
         try:
             with urlopen(request, timeout=self.timeout) as response:
                 return response.read(10 * 1024 * 1024 + 1)
