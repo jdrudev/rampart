@@ -58,7 +58,12 @@ def main() -> int:
         return 2
 
     try:
-        client = ConfluenceClient(os.environ["CONFLUENCE_BASE_URL"], os.environ["CONFLUENCE_EMAIL"], os.environ["CONFLUENCE_API_TOKEN"])
+        client = ConfluenceClient(
+            os.environ["CONFLUENCE_BASE_URL"],
+            os.environ["CONFLUENCE_EMAIL"],
+            os.environ["CONFLUENCE_API_TOKEN"],
+            os.environ.get("CONFLUENCE_CLOUD_ID"),
+        )
     except ValueError as error:
         print(f"Configuration error: {error}", file=sys.stderr)
         return 2
@@ -66,12 +71,14 @@ def main() -> int:
     email = os.environ["CONFLUENCE_EMAIL"]
     token = os.environ["CONFLUENCE_API_TOKEN"]
     print(f"Testing Confluence tenant: {client.base_url}")
+    print(f"Testing API endpoint: {client.api_base_url}")
 
     space = os.environ.get("CONFLUENCE_SPACE", "Portfolio")
+    content_type = os.environ.get("CONFLUENCE_CONTENT_TYPE", "page")
     checks_failed = False
 
     try:
-        identity = request(client.base_url, email, token, "/wiki/rest/api/user/current", {})
+        identity = request(client.api_base_url, email, token, "/wiki/rest/api/user/current", {})
         print(f"Identity: PASS ({identity.get('displayName', 'account authenticated')})")
     except HTTPError as error:
         report_http_error("Identity", error)
@@ -81,29 +88,29 @@ def main() -> int:
         return 1
 
     try:
-        spaces = request(client.base_url, email, token, "/wiki/rest/api/space", {"limit": "1"})
+        spaces = request(client.api_base_url, email, token, "/wiki/rest/api/space", {"limit": "1"})
         print(f"Space API: PASS ({len(spaces.get('results', []))} sample result(s))")
     except HTTPError as error:
         report_http_error("Space API", error)
         checks_failed = True
 
     try:
-        content = request(client.base_url, email, token, "/wiki/rest/api/content/search", {"cql": 'type = "blogpost"', "limit": "1"})
-        print(f"Blog Post API: PASS ({len(content.get('results', []))} sample result(s))")
+        content = request(client.api_base_url, email, token, "/wiki/rest/api/content/search", {"cql": f'type = "{content_type}"', "limit": "1"})
+        print(f"Content API ({content_type}): PASS ({len(content.get('results', []))} sample result(s))")
     except HTTPError as error:
-        report_http_error("Blog Post API", error)
+        report_http_error(f"Content API ({content_type})", error)
         checks_failed = True
 
-    cql = f'space = "{space}" AND type = "blogpost" AND label = "portfolio-public"'
+    cql = f'space = "{space}" AND type = "{content_type}" AND label = "portfolio-public"'
     try:
-        payload = request(client.base_url, email, token, "/wiki/rest/api/content/search", {"cql": cql, "limit": "50", "expand": "body.storage,version,history,metadata.labels"})
+        payload = request(client.api_base_url, email, token, "/wiki/rest/api/content/search", {"cql": cql, "limit": "50", "expand": "body.storage,version,history,metadata.labels"})
         results = payload.get("results", [])
         if not results:
-            print(f"Publication query: FAIL (0 matching blog post(s) in {space})", file=sys.stderr)
+            print(f"Publication query: FAIL (0 matching {content_type}(s) in {space})", file=sys.stderr)
             print('Check the space, content type, and exact "portfolio-public" label.', file=sys.stderr)
             checks_failed = True
         else:
-            print(f"Publication query: PASS ({len(results)} matching blog post(s) in {space})")
+            print(f"Publication query: PASS ({len(results)} matching {content_type}(s) in {space})")
             for result in results:
                 print(f"- {result.get('title', '<untitled>')} [{result.get('id', 'no-id')}]")
     except HTTPError as error:

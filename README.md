@@ -40,7 +40,7 @@ Posts live in `content/blog/` as Markdown or MDX files. Each post requires a tit
 
 Copy `.env.example` to a local environment and provide a read-only Confluence API token. The sync job only reads pages explicitly labelled `portfolio-public`; credentials are never committed or exposed to the browser.
 
-The scheduled GitHub Action requires repository secrets named `CONFLUENCE_BASE_URL`, `CONFLUENCE_EMAIL`, and `CONFLUENCE_API_TOKEN`. `CONFLUENCE_BASE_URL` may be entered as either `tenant.atlassian.net` or `https://tenant.atlassian.net`; the client normalizes hostnames to HTTPS and rejects insecure URLs. Set `CONFLUENCE_SPACE` to the space name or key if it differs from `Portfolio`. A failed API query stops the workflow before reconciliation so existing published content is preserved.
+The scheduled GitHub Action requires repository secrets named `CONFLUENCE_BASE_URL`, `CONFLUENCE_EMAIL`, and `CONFLUENCE_API_TOKEN`. `CONFLUENCE_BASE_URL` may be entered as either `tenant.atlassian.net` or `https://tenant.atlassian.net`; the client normalizes hostnames to HTTPS and rejects insecure URLs. For scoped API tokens such as `read:page:confluence`, set the repository variable `CONFLUENCE_CLOUD_ID`; requests then use the Atlassian API gateway. Set `CONFLUENCE_SPACE` to the space name or key if it differs from `Portfolio`. A failed API query stops the workflow before reconciliation so existing published content is preserved.
 
 To test the same credentials locally without changing Confluence content, copy `.env.example` to `.env`, fill in the values, and run:
 
@@ -48,7 +48,7 @@ To test the same credentials locally without changing Confluence content, copy `
 python -m scripts.confluence.check_credentials
 ```
 
-The diagnostic loads `.env` automatically and checks authentication, readable spaces, and the intended query: `Portfolio` space, `blogpost` type, and `portfolio-public` label. It never prints the email or token. Keep `.env` uncommitted; it is ignored by Git.
+The diagnostic loads `.env` automatically and checks authentication, readable spaces, and the intended query: `Portfolio` space, `page` type, and `portfolio-public` label. Set `CONFLUENCE_CONTENT_TYPE=blogpost` only if you intentionally use Confluence Blog Posts. It never prints the email or token. Keep `.env` uncommitted; it is ignored by Git.
 
 The same diagnostic can run against GitHub Secrets without syncing content: open **Actions**, choose **Check Confluence credentials**, and click **Run workflow**. This workflow has read-only repository permissions and does not commit or deploy anything.
 

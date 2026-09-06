@@ -14,7 +14,7 @@ from .models import ConfluenceAttachment, ConfluencePage
 
 
 class ConfluenceClient:
-    def __init__(self, base_url: str, email: str, token: str, timeout: int = 20) -> None:
+    def __init__(self, base_url: str, email: str, token: str, cloud_id: str | None = None, timeout: int = 20) -> None:
         value = "".join(base_url.split())
         if "://" not in value:
             value = f"https://{value}"
@@ -22,12 +22,13 @@ class ConfluenceClient:
         if parsed.scheme != "https" or not parsed.netloc:
             raise ValueError("CONFLUENCE_BASE_URL must be an HTTPS hostname or URL")
         self.base_url = value.rstrip("/")
+        self.api_base_url = f"https://api.atlassian.com/ex/confluence/{cloud_id.strip()}" if cloud_id and cloud_id.strip() else self.base_url
         self.timeout = timeout
         credentials = base64.b64encode(f"{email.strip()}:{token.strip()}".encode()).decode()
         self.headers = {"Authorization": f"Basic {credentials}", "Accept": "application/json"}
 
     def _get(self, path: str, params: str = "") -> dict:
-        url = f"{self.base_url}{path}{'?' + params if params else ''}"
+        url = f"{self.api_base_url}{path}{'?' + params if params else ''}"
         for attempt in range(3):
             try:
                 request = Request(url, headers=self.headers)
@@ -48,11 +49,11 @@ class ConfluenceClient:
             time.sleep(2**attempt)
         raise RuntimeError("Confluence request failed")
 
-    def list_blog_posts(self, label: str, space: str = "Portfolio") -> list[ConfluencePage]:
+    def list_published_pages(self, label: str, space: str = "Portfolio", content_type: str = "page") -> list[ConfluencePage]:
         pages: list[ConfluencePage] = []
         start = 0
         while True:
-            cql = f'space = "{space}" AND type = "blogpost" AND label = "{label}"'
+            cql = f'space = "{space}" AND type = "{content_type}" AND label = "{label}"'
             params = urlencode({"cql": cql, "expand": "body.storage,version,metadata.labels", "limit": "50", "start": str(start)})
             payload = self._get("/wiki/rest/api/content/search", params)
             for result in payload.get("results", []):
