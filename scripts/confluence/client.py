@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import time
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
@@ -92,10 +92,16 @@ class ConfluenceClient:
         while True:
             payload = self._get(f"/wiki/api/v2/pages/{page_id}/attachments", urlencode({"limit": "50", "start": str(start)}))
             results = payload.get("results", [])
-            attachments.extend(ConfluenceAttachment(item["id"], item["title"], item.get("mediaType", ""), item.get("downloadLink", f"{self.api_base_url}/wiki/api/v2/attachments/{item['id']}/download"), item.get("fileSize", 0)) for item in results)
+            attachments.extend(ConfluenceAttachment(item["id"], item["title"], item.get("mediaType", ""), self._attachment_download_url(item), item.get("fileSize", 0)) for item in results)
             if len(results) < 50:
                 return attachments
             start += 50
+
+    def _attachment_download_url(self, item: dict) -> str:
+        link = item.get("downloadLink", "")
+        if urlsplit(link).scheme and urlsplit(link).netloc:
+            return link
+        return f"{self.api_base_url}/wiki/api/v2/attachments/{item['id']}/download"
 
     def download_attachment(self, attachment: ConfluenceAttachment) -> bytes:
         request = Request(attachment.download_url, headers=self.bearer_headers)

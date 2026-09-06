@@ -141,7 +141,9 @@ def main() -> int:
                     print(f"Attachments API ({page_id}): PASS ({len(attachments.get('results', []))} sample result(s))", flush=True)
                     if attachments.get("results"):
                         attachment = attachments["results"][0]
-                        download_url = attachment.get("downloadLink")
+                        download_url = attachment.get("downloadLink") or f"{client.api_base_url}/wiki/api/v2/attachments/{attachment['id']}/download"
+                        if not download_url.startswith(("http://", "https://")):
+                            download_url = f"{client.api_base_url}/wiki/api/v2/attachments/{attachment['id']}/download"
                         if download_url:
                             try:
                                 download_request(download_url, token)
