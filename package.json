@@ -11,8 +11,8 @@
     "validate": "python scripts/validation/validate_content.py"
   },
   "dependencies": {
-    "@astrojs/mdx": "^4.3.0",
-    "astro": "^5.13.0",
+    "@astrojs/mdx": "^8.0.0",
+    "astro": "^7.3.1",
     "sharp": "^0.34.3"
   },
   "devDependencies": {
