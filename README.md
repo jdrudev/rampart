@@ -46,6 +46,7 @@ Create a Confluence-scoped token with these permissions:
 
 ```text
 search:confluence
+read:attachment:confluence
 read:confluence-content.all
 read:confluence-space.summary
 read:confluence-user
@@ -68,7 +69,7 @@ The diagnostic loads `.env` automatically and checks authentication, readable sp
 
 The same diagnostic can run against GitHub Secrets without syncing content: open **Actions**, choose **Check Confluence credentials**, and click **Run workflow**. This workflow has read-only repository permissions and does not commit or deploy anything.
 
-Diagnostic and sync errors have different meanings: a missing-variable configuration error means a required local `.env` value is absent; a Cloud ID resolution error means the tenant metadata endpoint could not be read; a page/API `401` means the email/token authentication or scoped-token gateway configuration is not accepted; an attachment `401` means page discovery succeeded but attachment access was rejected; an attachment `403` means authentication succeeded but the account/token lacks attachment access; a network error means the runner could not reach Confluence; `0 matching pages` fails closed when local content exists, preventing accidental deletion. Attachment checks use the REST v2 endpoint `/wiki/api/v2/pages/<id>/attachments` with the scoped attachment permission, not the legacy v1 `/child/attachment` route. Set `CONFLUENCE_ALLOW_EMPTY_SYNC=true` only when intentionally removing all published content. The diagnostic also checks attachment access for matched pages because image synchronization uses the attachment endpoint. A successful publication query prints the matched page title and ID before sync continues.
+Diagnostic and sync errors have different meanings: a missing-variable configuration error means a required local `.env` value is absent; a Cloud ID resolution error means the tenant metadata endpoint could not be read; a page/API `401` means the email/token authentication or scoped-token gateway configuration is not accepted; an attachment `401` means page discovery succeeded but attachment access was rejected; an attachment `403` means authentication succeeded but the account/token lacks attachment access; a network error means the runner could not reach Confluence; `0 matching pages` fails closed when local content exists, preventing accidental deletion. Attachment checks use the REST v2 endpoint `/wiki/api/v2/pages/<id>/attachments`, which requires the exact scoped permission `read:attachment:confluence`; `readonly:content.attachment:confluence` is a different v1 permission and does not satisfy the v2 route. Set `CONFLUENCE_ALLOW_EMPTY_SYNC=true` only when intentionally removing all published content. The diagnostic also checks attachment access for matched pages because image synchronization uses the attachment endpoint. A successful publication query prints the matched page title and ID before sync continues.
 
 ## Custom domain
 
