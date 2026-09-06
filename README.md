@@ -50,6 +50,8 @@ python -m scripts.confluence.check_credentials
 
 The diagnostic loads `.env` automatically and checks authentication, readable spaces, and the intended query: `Portfolio` space, `blogpost` type, and `portfolio-public` label. It never prints the email or token. Keep `.env` uncommitted; it is ignored by Git.
 
+The same diagnostic can run against GitHub Secrets without syncing content: open **Actions**, choose **Check Confluence credentials**, and click **Run workflow**. This workflow has read-only repository permissions and does not commit or deploy anything.
+
 ## Custom domain
 
 GitHub Pages must be configured to use `rampart.jdru.dev` in the repository Pages settings. The DNS provider should have a CNAME record for `rampart` pointing to the repository owner's GitHub Pages hostname. `public/CNAME` is included in every build so the domain remains attached to future deployments.

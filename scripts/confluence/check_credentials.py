@@ -39,6 +39,17 @@ def request(base_url: str, email: str, token: str, path: str, params: dict[str, 
         return json.load(response)
 
 
+def report_http_error(check: str, error: HTTPError) -> None:
+    if error.code == 401:
+        print(f"{check}: FAIL (401 Unauthorized)", file=sys.stderr)
+        print("The email/token pair is not accepted. Use an Atlassian API token with its exact account email.", file=sys.stderr)
+    elif error.code == 403:
+        print(f"{check}: FAIL (403 Forbidden)", file=sys.stderr)
+        print("The account is authenticated but lacks the permission required by this endpoint.", file=sys.stderr)
+    else:
+        print(f"{check}: FAIL (HTTP {error.code})", file=sys.stderr)
+
+
 def main() -> int:
     load_dotenv()
     missing = [name for name in ("CONFLUENCE_BASE_URL", "CONFLUENCE_EMAIL", "CONFLUENCE_API_TOKEN") if not os.environ.get(name)]
@@ -56,45 +67,50 @@ def main() -> int:
     token = os.environ["CONFLUENCE_API_TOKEN"]
     print(f"Testing Confluence tenant: {client.base_url}")
 
+    space = os.environ.get("CONFLUENCE_SPACE", "Portfolio")
+    checks_failed = False
+
     try:
-        spaces = request(client.base_url, email, token, "/wiki/rest/api/space", {"limit": "1"})
-        print(f"Authentication: PASS (accessible spaces response received; {len(spaces.get('results', []))} sample result(s))")
+        identity = request(client.base_url, email, token, "/wiki/rest/api/user/current", {})
+        print(f"Identity: PASS ({identity.get('displayName', 'account authenticated')})")
     except HTTPError as error:
-        if error.code == 401:
-            print("Authentication: FAIL (401 Unauthorized)", file=sys.stderr)
-            print("Use the exact Atlassian account email with an Atlassian API token.", file=sys.stderr)
-        elif error.code == 403:
-            print("Authentication: PASS, permissions: FAIL (403 Forbidden)", file=sys.stderr)
-            print("The token is valid but the account cannot read Confluence spaces.", file=sys.stderr)
-        else:
-            print(f"Authentication check failed with HTTP {error.code}", file=sys.stderr)
+        report_http_error("Identity", error)
         return 1
     except URLError as error:
-        print(f"Network check failed: {error.reason}", file=sys.stderr)
+        print(f"Identity: FAIL (network error: {error.reason})", file=sys.stderr)
         return 1
 
-    space = os.environ.get("CONFLUENCE_SPACE", "Portfolio")
+    try:
+        spaces = request(client.base_url, email, token, "/wiki/rest/api/space", {"limit": "1"})
+        print(f"Space API: PASS ({len(spaces.get('results', []))} sample result(s))")
+    except HTTPError as error:
+        report_http_error("Space API", error)
+        checks_failed = True
+
+    try:
+        content = request(client.base_url, email, token, "/wiki/rest/api/content/search", {"cql": 'type = "blogpost"', "limit": "1"})
+        print(f"Blog Post API: PASS ({len(content.get('results', []))} sample result(s))")
+    except HTTPError as error:
+        report_http_error("Blog Post API", error)
+        checks_failed = True
+
     cql = f'space = "{space}" AND type = "blogpost" AND label = "portfolio-public"'
     try:
         payload = request(client.base_url, email, token, "/wiki/rest/api/content/search", {"cql": cql, "limit": "50", "expand": "body.storage,version,history,metadata.labels"})
-    except HTTPError as error:
-        if error.code == 403:
-            print("Portfolio query: FAIL (403 Forbidden)", file=sys.stderr)
-            print("The account authenticated but lacks permission to read the Portfolio content.", file=sys.stderr)
+        results = payload.get("results", [])
+        if not results:
+            print(f"Publication query: FAIL (0 matching blog post(s) in {space})", file=sys.stderr)
+            print('Check the space, content type, and exact "portfolio-public" label.', file=sys.stderr)
+            checks_failed = True
         else:
-            print(f"Portfolio query failed with HTTP {error.code}", file=sys.stderr)
-        return 1
+            print(f"Publication query: PASS ({len(results)} matching blog post(s) in {space})")
+            for result in results:
+                print(f"- {result.get('title', '<untitled>')} [{result.get('id', 'no-id')}]")
+    except HTTPError as error:
+        report_http_error("Publication query", error)
+        checks_failed = True
 
-    results = payload.get("results", [])
-    if not results:
-        print(f"Portfolio query: FAIL (0 matching blog post(s) in {space})", file=sys.stderr)
-        print('Check the space, content type, and exact "portfolio-public" label.', file=sys.stderr)
-        return 1
-
-    print(f"Portfolio query: PASS ({len(results)} matching blog post(s) in {space})")
-    for result in results:
-        print(f"- {result.get('title', '<untitled>')} [{result.get('id', 'no-id')}]")
-    return 0
+    return 1 if checks_failed else 0
 
 
 if __name__ == "__main__":
