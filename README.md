@@ -34,7 +34,7 @@ npm run validate
 npm run build
 ```
 
-Posts live in `content/blog/` as Markdown or MDX files. Each post requires a title, description, date, and tags. The sample collection includes several cybersecurity topics for testing search and filtering.
+Posts live in `content/blog/` as generated Markdown files. Confluence is the source of truth for this directory: a successful sync reconciles it to pages carrying `portfolio-public`, so manually authored posts placed there may be removed. Each generated post requires a title, description, date, tags, and immutable `confluence_id`.
 
 ## Confluence sync
 
@@ -49,7 +49,10 @@ search:confluence
 read:confluence-content.all
 read:confluence-space.summary
 read:confluence-user
+readonly:content.attachment:confluence
 ```
+
+`readonly:content.attachment:confluence` is required for image sync: the sync job lists and downloads page attachments via `/wiki/rest/api/content/{id}/child/attachment`, which is a separate scope from page content read access.
 
 The token owner must also have permission to view the `Portfolio` space and page `3309652`. Jira or any other Atlassian product is not required. The published source is a normal Confluence page, not a Blog Post, so the default content type is `page`.
 
@@ -65,7 +68,7 @@ The diagnostic loads `.env` automatically and checks authentication, readable sp
 
 The same diagnostic can run against GitHub Secrets without syncing content: open **Actions**, choose **Check Confluence credentials**, and click **Run workflow**. This workflow has read-only repository permissions and does not commit or deploy anything.
 
-Diagnostic and sync errors have different meanings: a missing-variable configuration error means a required local `.env` value is absent; a Cloud ID resolution error means the tenant metadata endpoint could not be read; a page/API `401` means the email/token authentication or scoped-token gateway configuration is not accepted; an attachment `401` means page discovery succeeded but attachment access was rejected; an attachment `403` means authentication succeeded but the account/token lacks attachment access; a network error means the runner could not reach Confluence; `0 matching pages` means the API worked but the space, page type, or `portfolio-public` label did not match. The diagnostic also checks attachment access for matched pages because image synchronization uses the attachment endpoint. A successful publication query prints the matched page title and ID before sync continues.
+Diagnostic and sync errors have different meanings: a missing-variable configuration error means a required local `.env` value is absent; a Cloud ID resolution error means the tenant metadata endpoint could not be read; a page/API `401` means the email/token authentication or scoped-token gateway configuration is not accepted; an attachment `401` means page discovery succeeded but attachment access was rejected; an attachment `403` means authentication succeeded but the account/token lacks attachment access; a network error means the runner could not reach Confluence; `0 matching pages` fails closed when local content exists, preventing accidental deletion. Set `CONFLUENCE_ALLOW_EMPTY_SYNC=true` only when intentionally removing all published content. The diagnostic also checks attachment access for matched pages because image synchronization uses the attachment endpoint. A successful publication query prints the matched page title and ID before sync continues.
 
 ## Custom domain
 
