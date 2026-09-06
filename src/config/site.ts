@@ -1,21 +1,21 @@
 export const siteCopy = {
   siteName: 'RAMPART',
-  defaultTitle: 'Rampart | Security engineering notes',
+  defaultTitle: 'Rampart',
   defaultDescription: 'Security engineering notes, lessons learned, and practical systems thinking.',
   navigation: { posts: 'Posts' },
   footer: { label: 'Security engineering notes' },
   home: {
-    eyebrow: 'Security engineering / lessons learned',
+    eyebrow: 'Home Lab / Research / HTB / Findings',
     title: 'Rampart',
-    introduction: 'Notes on security engineering, systems, and the practical work of making technology more dependable.',
+    introduction: 'My personal space and digital garden to write about my learning and development from projects',
     browsePosts: 'Browse posts',
     recentPosts: 'Recent posts',
     allPosts: 'All posts'
   },
   posts: {
-    title: 'Security engineering',
-    titleLineTwo: 'in practice.',
-    searchPlaceholder: 'Search posts',
+    title: 'Rampart:',
+    titleLineTwo: 'All my projects',
+    searchPlaceholder: 'Search here ...',
     allFilter: 'All',
     emptySearch: 'No posts match that search.',
     backLink: 'All posts'
