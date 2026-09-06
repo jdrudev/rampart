@@ -110,7 +110,7 @@ def _table_rows(node: _Node) -> list[list[_Node]]:
 def _render_children(node: _Node) -> str:
     parts: list[str] = []
     for child in node.children:
-        if isinstance(child, _Node) and (child.name in BLOCK_NODES or child.name.startswith("h")):
+        if isinstance(child, _Node) and (child.name in BLOCK_NODES or child.name.startswith("h") or child.name.startswith("ac:")):
             parts.append(_render_block(child))
         elif isinstance(child, str) and child.strip():
             parts.append(child.strip())
@@ -168,6 +168,8 @@ def _render_block(node: _Node) -> str:
                 checked = _plain(status).strip().lower() in {"complete", "completed", "done"} if status else False
                 tasks.append(f"- [{'x' if checked else ' '}] {_inline(body).strip() if body else _inline(child).strip()}")
         return "\n".join(tasks)
+    if node.name.startswith("ac:"):
+        return _render_children(node)
     if node.name in {"p", "div", "section", "article"}:
         if any(isinstance(child, _Node) and (child.name in BLOCK_NODES or child.name.startswith("h")) for child in node.children):
             return _render_children(node)

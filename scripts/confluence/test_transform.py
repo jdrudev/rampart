@@ -61,6 +61,19 @@ class TransformTests(unittest.TestCase):
 
         self.assertIn('```\nprint("hello")\n```', markdown)
 
+    def test_confluence_layout_containers_preserve_nested_blocks(self) -> None:
+        markdown = page_to_markdown(_page(
+            '<ac:layout><ac:layout-section><ac:layout-cell>'
+            '<h1>Wrapped heading</h1><ul><li>First item</li></ul>'
+            '<table><tr><th>Format</th><th>Result</th></tr>'
+            '<tr><td>Bold</td><td><strong>Pass</strong></td></tr></table>'
+            '</ac:layout-cell></ac:layout-section></ac:layout>'
+        ))
+
+        self.assertIn("## Wrapped heading", markdown)
+        self.assertIn("- First item", markdown)
+        self.assertIn("| Format | Result |", markdown)
+
 
 if __name__ == "__main__":
     unittest.main()
