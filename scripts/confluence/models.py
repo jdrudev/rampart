@@ -18,3 +18,4 @@ class ConfluenceAttachment:
     media_type: str
     download_url: str
     file_size: int
+    fallback_download_url: str | None = None
