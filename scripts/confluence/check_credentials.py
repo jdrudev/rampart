@@ -42,10 +42,10 @@ def request(base_url: str, email: str, token: str, path: str, params: dict[str, 
 def report_http_error(check: str, error: HTTPError) -> None:
     if error.code == 401:
         print(f"{check}: FAIL (401 Unauthorized)", file=sys.stderr)
-        print("The email/token pair is not accepted. Use an Atlassian API token with its exact account email.", file=sys.stderr)
+        print("The email/token pair or scoped-token gateway configuration is not accepted. Check the exact account email, API token value, and CONFLUENCE_CLOUD_ID. See README.md for required permissions.", file=sys.stderr)
     elif error.code == 403:
         print(f"{check}: FAIL (403 Forbidden)", file=sys.stderr)
-        print("The account is authenticated but lacks the permission required by this endpoint.", file=sys.stderr)
+        print("Authentication succeeded, but the token or account lacks the permission required by this endpoint. See README.md for required permissions and space access.", file=sys.stderr)
     else:
         print(f"{check}: FAIL (HTTP {error.code})", file=sys.stderr)
 
