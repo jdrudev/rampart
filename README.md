@@ -49,14 +49,14 @@ search:confluence
 read:confluence-content.all
 read:confluence-space.summary
 read:confluence-user
-readonly:content.attachment:confluence
+read:attachment:confluence
 ```
 
-`readonly:content.attachment:confluence` is required for image sync. The sync job lists attachments through the Atlassian gateway, then downloads using the returned Confluence link when the gateway download route is rejected.
+`read:attachment:confluence` is required for image sync. The sync job lists attachments and downloads binaries through the Atlassian gateway, using bearer authentication required by scoped Confluence API tokens.
 
 The token owner must also have permission to view the `Portfolio` space and page `3309652`. Jira or any other Atlassian product is not required. The published source is a normal Confluence page, not a Blog Post, so the default content type is `page`.
 
-The scheduled GitHub Action requires repository secrets named `CONFLUENCE_BASE_URL`, `CONFLUENCE_EMAIL`, and `CONFLUENCE_API_TOKEN`. `CONFLUENCE_BASE_URL` may be entered as either `tenant.atlassian.net` or `https://tenant.atlassian.net`; the client normalizes hostnames to HTTPS and rejects insecure URLs. For scoped tokens, the client dynamically resolves the Cloud ID and routes page/attachment listing through the Atlassian gateway; binary downloads can fall back to the returned tenant link. `CONFLUENCE_CLOUD_ID` is optional. Set `CONFLUENCE_SPACE` to the space name or key if it differs from `Portfolio`. A failed API query stops the workflow before reconciliation so existing published content is preserved.
+The scheduled GitHub Action requires repository secrets named `CONFLUENCE_BASE_URL`, `CONFLUENCE_EMAIL`, and `CONFLUENCE_API_TOKEN`. `CONFLUENCE_BASE_URL` may be entered as either `tenant.atlassian.net` or `https://tenant.atlassian.net`; the client normalizes hostnames to HTTPS and rejects insecure URLs. For scoped tokens, the client dynamically resolves the Cloud ID and routes page, attachment, and binary-download requests through the Atlassian gateway; downloads use bearer authentication. `CONFLUENCE_CLOUD_ID` is optional. Set `CONFLUENCE_SPACE` to the space name or key if it differs from `Portfolio`. A failed API query stops the workflow before reconciliation so existing published content is preserved.
 
 To test the same credentials locally without changing Confluence content, copy `.env.example` to `.env`, fill in the values, and run:
 
@@ -68,7 +68,7 @@ The diagnostic loads `.env` automatically and checks authentication, readable sp
 
 The same diagnostic can run against GitHub Secrets without syncing content: open **Actions**, choose **Check Confluence credentials**, and click **Run workflow**. This workflow has read-only repository permissions and does not commit or deploy anything.
 
-Diagnostic and sync errors have different meanings: a missing-variable configuration error means a required local `.env` value is absent; a page/API `401` means the email/token pair or token permissions are not accepted; an attachment `401` means page discovery succeeded but attachment access was rejected; an attachment `403` means authentication succeeded but the account/token lacks attachment access; a network error means the runner could not reach Confluence; `0 matching pages` fails closed when local content exists, preventing accidental deletion. Attachment checks use the tenant-hosted REST v2 endpoint `/wiki/api/v2/pages/<id>/attachments` and the returned download link. Set `CONFLUENCE_ALLOW_EMPTY_SYNC=true` only when intentionally removing all published content. The diagnostic also checks attachment access for matched pages because image synchronization uses the attachment endpoint. A successful publication query prints the matched page title and ID before sync continues.
+Diagnostic and sync errors have different meanings: a missing-variable configuration error means a required local `.env` value is absent; a page/API `401` means the email/token pair or token permissions are not accepted; an attachment `401` means page discovery succeeded but attachment access was rejected, usually because the scoped token was not created with `read:attachment:confluence`; an attachment `403` means authentication succeeded but the account/token lacks attachment access; a network error means the runner could not reach Confluence; `0 matching pages` fails closed when local content exists, preventing accidental deletion. Attachment checks use the Atlassian gateway REST v2 endpoint `/wiki/api/v2/pages/<id>/attachments` and its `/wiki/api/v2/attachments/<id>/download` route. Set `CONFLUENCE_ALLOW_EMPTY_SYNC=true` only when intentionally removing all published content. The diagnostic also checks an attachment download for matched pages because image synchronization uses that endpoint. A successful publication query prints the matched page title and ID before sync continues.
 
 ## Custom domain
 

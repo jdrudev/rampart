@@ -40,15 +40,7 @@ def request(base_url: str, email: str, token: str, path: str, params: dict[str, 
 
 
 def download_request(url: str, email: str, token: str) -> bytes:
-    credentials = base64.b64encode(f"{email.strip()}:{token.strip()}".encode()).decode()
-    request = Request(url, headers={"Authorization": f"Basic {credentials}", "Accept": "application/octet-stream"})
-    with urlopen(request, timeout=20) as response:
-        return response.read(1)
-
-
-def basic_download_request(url: str, email: str, token: str) -> bytes:
-    credentials = base64.b64encode(f"{email.strip()}:{token.strip()}".encode()).decode()
-    request = Request(url, headers={"Authorization": f"Basic {credentials}", "Accept": "application/octet-stream"})
+    request = Request(url, headers={"Authorization": f"Bearer {token.strip()}", "Accept": "application/octet-stream"})
     with urlopen(request, timeout=20) as response:
         return response.read(1)
 
@@ -149,27 +141,13 @@ def main() -> int:
                     print(f"Attachments API ({page_id}): PASS ({len(attachments.get('results', []))} sample result(s))", flush=True)
                     if attachments.get("results"):
                         attachment = attachments["results"][0]
-                        download_url = attachment.get("downloadLink") or f"{client.api_base_url}/wiki/api/v2/attachments/{attachment['id']}/download"
-                        if not download_url.startswith(("http://", "https://")):
-                            download_url = f"{client.api_base_url}/wiki/api/v2/attachments/{attachment['id']}/download"
-                        if download_url:
-                            try:
-                                download_request(download_url, email, token)
-                                print(f"Attachment download ({page_id}): PASS", flush=True)
-                            except HTTPError as error:
-                                fallback = attachment.get("downloadLink", "")
-                                if fallback.startswith("/wiki/"):
-                                    fallback = f"{client.base_url}{fallback}"
-                                elif fallback.startswith("/"):
-                                    fallback = f"{client.base_url}/wiki{fallback}"
-                                try:
-                                    if not fallback:
-                                        raise error
-                                    basic_download_request(fallback, email, token)
-                                    print(f"Attachment download ({page_id}): PASS via returned link", flush=True)
-                                except HTTPError as fallback_error:
-                                    report_http_error(f"Attachment download ({page_id})", fallback_error)
-                                    checks_failed = True
+                        download_url = f"{client.api_base_url}/wiki/api/v2/attachments/{attachment['id']}/download"
+                        try:
+                            download_request(download_url, email, token)
+                            print(f"Attachment download ({page_id}): PASS", flush=True)
+                        except HTTPError as error:
+                            report_http_error(f"Attachment download ({page_id})", error)
+                            checks_failed = True
                 except HTTPError as error:
                     report_http_error(f"Attachments API ({page_id})", error)
                     checks_failed = True

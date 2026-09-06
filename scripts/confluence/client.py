@@ -35,6 +35,7 @@ class ConfluenceClient:
         self.api_base_url = f"https://api.atlassian.com/ex/confluence/{resolved_cloud_id}"
         credentials = base64.b64encode(f"{email.strip()}:{token.strip()}".encode()).decode()
         self.headers = {"Authorization": f"Basic {credentials}", "Accept": "application/json"}
+        self.download_headers = {"Authorization": f"Bearer {token.strip()}", "Accept": "application/octet-stream"}
         self.site_headers = {"Authorization": f"Basic {credentials}", "Accept": "application/octet-stream"}
 
     def _resolve_cloud_id(self) -> str:
@@ -113,7 +114,7 @@ class ConfluenceClient:
 
     def download_attachment(self, attachment: ConfluenceAttachment) -> bytes:
         try:
-            request = Request(attachment.download_url, headers=self.headers)
+            request = Request(attachment.download_url, headers=self.download_headers)
             with urlopen(request, timeout=self.timeout) as response:
                 return response.read(10 * 1024 * 1024 + 1)
         except HTTPError as error:
