@@ -31,10 +31,22 @@ class ConfluenceClient:
             raise ValueError("CONFLUENCE_BASE_URL must be an HTTPS hostname or URL")
         self.base_url = value.rstrip("/")
         self.timeout = timeout
-        # Atlassian API tokens use the tenant REST host with Basic email:token auth.
-        self.api_base_url = self.base_url
+        resolved_cloud_id = cloud_id.strip() if cloud_id and cloud_id.strip() else self._resolve_cloud_id()
+        self.api_base_url = f"https://api.atlassian.com/ex/confluence/{resolved_cloud_id}"
         credentials = base64.b64encode(f"{email.strip()}:{token.strip()}".encode()).decode()
         self.headers = {"Authorization": f"Basic {credentials}", "Accept": "application/json"}
+        self.site_headers = {"Authorization": f"Basic {credentials}", "Accept": "application/octet-stream"}
+
+    def _resolve_cloud_id(self) -> str:
+        try:
+            request = Request(f"{self.base_url}/_edge/tenant_info", headers={"Accept": "application/json"})
+            with urlopen(request, timeout=self.timeout) as response:
+                cloud_id = json.load(response).get("cloudId")
+        except (HTTPError, URLError, ValueError, json.JSONDecodeError) as error:
+            raise ValueError("Unable to resolve Confluence Cloud ID from CONFLUENCE_BASE_URL") from error
+        if not isinstance(cloud_id, str) or not cloud_id.strip():
+            raise ValueError("Confluence tenant metadata did not include a Cloud ID")
+        return cloud_id.strip()
 
     def _get(self, path: str, params: str = "") -> dict:
         url = f"{self.api_base_url}{path}{'?' + params if params else ''}"
@@ -109,7 +121,7 @@ class ConfluenceClient:
                 body = _read_error_body(error)
                 raise RuntimeError(f"Attachment download failed with HTTP {error.code}. Response body: {body}") from error
             try:
-                request = Request(attachment.fallback_download_url, headers=self.headers)
+                request = Request(attachment.fallback_download_url, headers=self.site_headers)
                 with urlopen(request, timeout=self.timeout) as response:
                     return response.read(10 * 1024 * 1024 + 1)
             except HTTPError as fallback_error:

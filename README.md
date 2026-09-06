@@ -52,11 +52,11 @@ read:confluence-user
 readonly:content.attachment:confluence
 ```
 
-`readonly:content.attachment:confluence` is required for image sync. The sync job lists and downloads page attachments through the tenant-hosted Confluence REST v2 API using the same Basic `email:token` authentication as page reads.
+`readonly:content.attachment:confluence` is required for image sync. The sync job lists attachments through the Atlassian gateway, then downloads using the returned Confluence link when the gateway download route is rejected.
 
 The token owner must also have permission to view the `Portfolio` space and page `3309652`. Jira or any other Atlassian product is not required. The published source is a normal Confluence page, not a Blog Post, so the default content type is `page`.
 
-The scheduled GitHub Action requires repository secrets named `CONFLUENCE_BASE_URL`, `CONFLUENCE_EMAIL`, and `CONFLUENCE_API_TOKEN`. `CONFLUENCE_BASE_URL` may be entered as either `tenant.atlassian.net` or `https://tenant.atlassian.net`; the client normalizes hostnames to HTTPS and rejects insecure URLs. These Atlassian API tokens use the tenant-hosted Confluence API with Basic authentication; `CONFLUENCE_CLOUD_ID` is not required. Set `CONFLUENCE_SPACE` to the space name or key if it differs from `Portfolio`. A failed API query stops the workflow before reconciliation so existing published content is preserved.
+The scheduled GitHub Action requires repository secrets named `CONFLUENCE_BASE_URL`, `CONFLUENCE_EMAIL`, and `CONFLUENCE_API_TOKEN`. `CONFLUENCE_BASE_URL` may be entered as either `tenant.atlassian.net` or `https://tenant.atlassian.net`; the client normalizes hostnames to HTTPS and rejects insecure URLs. For scoped tokens, the client dynamically resolves the Cloud ID and routes page/attachment listing through the Atlassian gateway; binary downloads can fall back to the returned tenant link. `CONFLUENCE_CLOUD_ID` is optional. Set `CONFLUENCE_SPACE` to the space name or key if it differs from `Portfolio`. A failed API query stops the workflow before reconciliation so existing published content is preserved.
 
 To test the same credentials locally without changing Confluence content, copy `.env.example` to `.env`, fill in the values, and run:
 
