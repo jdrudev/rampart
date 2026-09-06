@@ -16,14 +16,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Verify Confluence gateway configuration
-        env:
-          CONFLUENCE_CLOUD_ID: ${{ vars.CONFLUENCE_CLOUD_ID }}
-        run: |
-          if [[ -z "$CONFLUENCE_CLOUD_ID" ]]; then
-            echo "::error::Repository variable CONFLUENCE_CLOUD_ID is required for scoped Confluence tokens."
-            exit 1
-          fi
       - name: Sync explicitly published pages
         env:
           CONFLUENCE_BASE_URL: ${{ secrets.CONFLUENCE_BASE_URL }}

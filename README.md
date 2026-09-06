@@ -53,7 +53,7 @@ read:confluence-user
 
 The token owner must also have permission to view the `Portfolio` space and page `3309652`. Jira or any other Atlassian product is not required. The published source is a normal Confluence page, not a Blog Post, so the default content type is `page`.
 
-The scheduled GitHub Action requires repository secrets named `CONFLUENCE_BASE_URL`, `CONFLUENCE_EMAIL`, and `CONFLUENCE_API_TOKEN`. `CONFLUENCE_BASE_URL` may be entered as either `tenant.atlassian.net` or `https://tenant.atlassian.net`; the client normalizes hostnames to HTTPS and rejects insecure URLs. For scoped API tokens such as `read:page:confluence`, set the repository variable `CONFLUENCE_CLOUD_ID`; requests then use the Atlassian API gateway. The workflow fails before making an API request if that variable is missing. Set `CONFLUENCE_SPACE` to the space name or key if it differs from `Portfolio`. A failed API query stops the workflow before reconciliation so existing published content is preserved.
+The scheduled GitHub Action requires repository secrets named `CONFLUENCE_BASE_URL`, `CONFLUENCE_EMAIL`, and `CONFLUENCE_API_TOKEN`. `CONFLUENCE_BASE_URL` may be entered as either `tenant.atlassian.net` or `https://tenant.atlassian.net`; the client normalizes hostnames to HTTPS and rejects insecure URLs. For scoped API tokens such as `read:page:confluence`, the client automatically resolves the public Cloud ID from the tenant metadata endpoint and routes requests through the Atlassian API gateway. `CONFLUENCE_CLOUD_ID` is optional if you prefer to configure it explicitly. Set `CONFLUENCE_SPACE` to the space name or key if it differs from `Portfolio`. A failed API query stops the workflow before reconciliation so existing published content is preserved.
 
 To test the same credentials locally without changing Confluence content, copy `.env.example` to `.env`, fill in the values, and run:
 
@@ -65,7 +65,7 @@ The diagnostic loads `.env` automatically and checks authentication, readable sp
 
 The same diagnostic can run against GitHub Secrets without syncing content: open **Actions**, choose **Check Confluence credentials**, and click **Run workflow**. This workflow has read-only repository permissions and does not commit or deploy anything.
 
-Diagnostic and sync errors have different meanings: a missing-variable configuration error means a required local `.env` value or GitHub repository variable is absent; `401` means the email/token authentication or scoped-token gateway configuration is not accepted; `403` means authentication succeeded but the token or account lacks the required access; a network error means the runner could not reach Confluence; `0 matching pages` means the API worked but the space, page type, or `portfolio-public` label did not match. A successful publication query prints the matched page title and ID before sync continues.
+Diagnostic and sync errors have different meanings: a missing-variable configuration error means a required local `.env` value is absent; a Cloud ID resolution error means the tenant metadata endpoint could not be read; `401` means the email/token authentication or scoped-token gateway configuration is not accepted; `403` means authentication succeeded but the token or account lacks the required access; a network error means the runner could not reach Confluence; `0 matching pages` means the API worked but the space, page type, or `portfolio-public` label did not match. A successful publication query prints the matched page title and ID before sync continues.
 
 ## Custom domain
 
