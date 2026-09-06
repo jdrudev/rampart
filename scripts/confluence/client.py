@@ -13,6 +13,14 @@ from urllib.request import Request, urlopen
 from .models import ConfluenceAttachment, ConfluencePage
 
 
+def _read_error_body(error: HTTPError, limit: int = 500) -> str:
+    """Return the API's own error detail instead of guessing a root cause from the status code alone."""
+    try:
+        return error.read().decode("utf-8", errors="replace")[:limit]
+    except Exception:
+        return "<no response body>"
+
+
 class ConfluenceClient:
     def __init__(self, base_url: str, email: str, token: str, cloud_id: str | None = None, timeout: int = 20) -> None:
         value = "".join(base_url.split())
@@ -47,29 +55,16 @@ class ConfluenceClient:
                 with urlopen(request, timeout=self.timeout) as response:
                     return json.load(response)
             except HTTPError as error:
-                if error.code == 401:
-                    if "/child/attachment" in path:
-                        raise RuntimeError(
-                            f"Confluence attachment access failed (401) for {path}. "
-                            "Page discovery may have succeeded, but this token was rejected while reading attachments. "
-                            "Check the token's attachment/content-read scope and the exact token owner email."
-                        ) from error
+                if error.code in (401, 403):
+                    body = _read_error_body(error)
                     raise RuntimeError(
-                        f"Confluence page/API authentication failed (401) for {path}. "
-                        "Check the exact account email, API token value, Cloud ID, and scoped-token gateway endpoint."
-                    ) from error
-                if error.code == 403:
-                    if "/child/attachment" in path:
-                        raise RuntimeError(
-                            f"Confluence attachment access denied (403) for {path}. "
-                            "The token authenticated, but the account/token cannot read page attachments."
-                        ) from error
-                    raise RuntimeError(
-                        f"Confluence authorization failed (403) for {path}. Authentication succeeded, "
-                        "but the token or account cannot access the requested Confluence resource."
+                        f"Confluence request failed with HTTP {error.code} for {path}. Response body: {body}"
                     ) from error
                 if error.code not in (429, 500, 502, 503, 504) or attempt == 2:
-                    raise RuntimeError(f"Confluence request failed with HTTP {error.code}") from error
+                    body = _read_error_body(error)
+                    raise RuntimeError(
+                        f"Confluence request failed with HTTP {error.code} for {path}. Response body: {body}"
+                    ) from error
             except URLError as error:
                 if attempt == 2:
                     raise RuntimeError(f"Confluence network request failed: {error.reason}") from error
@@ -91,8 +86,15 @@ class ConfluenceClient:
             start += 50
 
     def get_attachments(self, page_id: str) -> list[ConfluenceAttachment]:
-        payload = self._get(f"/wiki/rest/api/content/{page_id}/child/attachment", "limit=200")
-        return [ConfluenceAttachment(item["id"], item["title"], item.get("metadata", {}).get("mediaType", ""), f"{self.api_base_url}{item['_links']['download']}", item.get("extensions", {}).get("fileSize", 0)) for item in payload.get("results", [])]
+        attachments: list[ConfluenceAttachment] = []
+        start = 0
+        while True:
+            payload = self._get(f"/wiki/rest/api/content/{page_id}/child/attachment", urlencode({"limit": "50", "start": str(start)}))
+            results = payload.get("results", [])
+            attachments.extend(ConfluenceAttachment(item["id"], item["title"], item.get("metadata", {}).get("mediaType", ""), f"{self.api_base_url}{item['_links']['download']}", item.get("extensions", {}).get("fileSize", 0)) for item in results)
+            if len(results) < 50:
+                return attachments
+            start += 50
 
     def download_attachment(self, attachment: ConfluenceAttachment) -> bytes:
         request = Request(attachment.download_url, headers=self.headers)
@@ -100,6 +102,7 @@ class ConfluenceClient:
             with urlopen(request, timeout=self.timeout) as response:
                 return response.read(10 * 1024 * 1024 + 1)
         except HTTPError as error:
-            raise RuntimeError(f"Attachment download failed with HTTP {error.code}") from error
+            body = _read_error_body(error)
+            raise RuntimeError(f"Attachment download failed with HTTP {error.code}. Response body: {body}") from error
         except URLError as error:
             raise RuntimeError(f"Attachment download failed: {error.reason}") from error

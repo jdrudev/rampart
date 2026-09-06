@@ -40,14 +40,12 @@ def request(base_url: str, email: str, token: str, path: str, params: dict[str, 
 
 
 def report_http_error(check: str, error: HTTPError) -> None:
-    if error.code == 401:
-        print(f"{check}: FAIL (401 Unauthorized)", file=sys.stderr, flush=True)
-        print("The email/token pair or scoped-token gateway configuration is not accepted. Check the exact account email, API token value, and CONFLUENCE_CLOUD_ID. See README.md for required permissions.", file=sys.stderr)
-    elif error.code == 403:
-        print(f"{check}: FAIL (403 Forbidden)", file=sys.stderr, flush=True)
-        print("Authentication succeeded, but the token or account lacks the permission required by this endpoint. See README.md for required permissions and space access.", file=sys.stderr)
-    else:
-        print(f"{check}: FAIL (HTTP {error.code})", file=sys.stderr, flush=True)
+    try:
+        body = error.read().decode("utf-8", errors="replace")[:500]
+    except Exception:
+        body = "<no response body>"
+    print(f"{check}: FAIL (HTTP {error.code})", file=sys.stderr, flush=True)
+    print(f"Response body: {body}", file=sys.stderr, flush=True)
 
 
 def main() -> int:
@@ -86,6 +84,9 @@ def main() -> int:
     except URLError as error:
         print(f"Identity: FAIL (network error: {error.reason})", file=sys.stderr, flush=True)
         return 1
+    except Exception as error:
+        print(f"Identity: FAIL (unexpected {type(error).__name__}: {error})", file=sys.stderr, flush=True)
+        return 1
 
     try:
         spaces = request(client.api_base_url, email, token, "/wiki/rest/api/space", {"limit": "1"})
@@ -96,6 +97,9 @@ def main() -> int:
     except URLError as error:
         print(f"Space API: FAIL (network error: {error.reason})", file=sys.stderr, flush=True)
         checks_failed = True
+    except Exception as error:
+        print(f"Space API: FAIL (unexpected {type(error).__name__}: {error})", file=sys.stderr, flush=True)
+        checks_failed = True
 
     try:
         content = request(client.api_base_url, email, token, "/wiki/rest/api/content/search", {"cql": f'type = "{content_type}"', "limit": "1"})
@@ -105,6 +109,9 @@ def main() -> int:
         checks_failed = True
     except URLError as error:
         print(f"Content API ({content_type}): FAIL (network error: {error.reason})", file=sys.stderr, flush=True)
+        checks_failed = True
+    except Exception as error:
+        print(f"Content API ({content_type}): FAIL (unexpected {type(error).__name__}: {error})", file=sys.stderr, flush=True)
         checks_failed = True
 
     cql = f'space = "{space}" AND type = "{content_type}" AND label = "portfolio-public"'
@@ -132,11 +139,17 @@ def main() -> int:
                 except URLError as error:
                     print(f"Attachments API ({page_id}): FAIL (network error: {error.reason})", file=sys.stderr, flush=True)
                     checks_failed = True
+                except Exception as error:
+                    print(f"Attachments API ({page_id}): FAIL (unexpected {type(error).__name__}: {error})", file=sys.stderr, flush=True)
+                    checks_failed = True
     except HTTPError as error:
         report_http_error("Publication query", error)
         checks_failed = True
     except URLError as error:
         print(f"Publication query: FAIL (network error: {error.reason})", file=sys.stderr, flush=True)
+        checks_failed = True
+    except Exception as error:
+        print(f"Publication query: FAIL (unexpected {type(error).__name__}: {error})", file=sys.stderr, flush=True)
         checks_failed = True
 
     return 1 if checks_failed else 0
