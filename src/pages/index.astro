@@ -16,7 +16,7 @@ const base = import.meta.env.BASE_URL;
   <section class="notes shell">
     <div class="section-heading"><h2>Recent posts</h2><a href={`${base}blogs/`}>All posts →</a></div>
     <div class="post-list">
-      {posts.slice(0, 3).map((post) => <a class="post-row" href={`${base}blogs/${post.id}/`}><time datetime={post.data.date.toISOString()}>{post.data.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</time><h3>{post.data.title}</h3><span>↗</span></a>)}
+      {posts.slice(0, 3).map((post) => <a class="post-row" href={`${base}blog/${post.data.confluence_id}/`}><time datetime={post.data.date.toISOString()}>{post.data.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</time><h3>{post.data.title}</h3><span>↗</span></a>)}
     </div>
   </section>
 </BaseLayout>

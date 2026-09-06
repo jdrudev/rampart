@@ -81,4 +81,14 @@ class ConfluenceClient:
 
     def get_attachments(self, page_id: str) -> list[ConfluenceAttachment]:
         payload = self._get(f"/wiki/rest/api/content/{page_id}/child/attachment", "limit=200")
-        return [ConfluenceAttachment(item["id"], item["title"], item.get("metadata", {}).get("mediaType", ""), f"{self.base_url}{item['_links']['download']}", item.get("extensions", {}).get("fileSize", 0)) for item in payload.get("results", [])]
+        return [ConfluenceAttachment(item["id"], item["title"], item.get("metadata", {}).get("mediaType", ""), f"{self.api_base_url}{item['_links']['download']}", item.get("extensions", {}).get("fileSize", 0)) for item in payload.get("results", [])]
+
+    def download_attachment(self, attachment: ConfluenceAttachment) -> bytes:
+        request = Request(attachment.download_url, headers=self.headers)
+        try:
+            with urlopen(request, timeout=self.timeout) as response:
+                return response.read(10 * 1024 * 1024 + 1)
+        except HTTPError as error:
+            raise RuntimeError(f"Attachment download failed with HTTP {error.code}") from error
+        except URLError as error:
+            raise RuntimeError(f"Attachment download failed: {error.reason}") from error

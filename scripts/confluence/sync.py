@@ -12,6 +12,8 @@ from .transform import page_to_markdown
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTENT = ROOT / "content" / "blog"
+ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp", "image/svg+xml"}
+MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 
 
 def slugify(title: str) -> str:
@@ -37,8 +39,21 @@ def sync() -> None:
         slug = slugify(page.title)
         desired.add(slug)
         article_dir = CONTENT / slug
+        assets_dir = article_dir / "assets"
         article_dir.mkdir(parents=True, exist_ok=True)
-        (article_dir / "index.md").write_text(page_to_markdown(page), encoding="utf-8")
+        attachments = client.get_attachments(page.page_id)
+        image_attachments = [attachment for attachment in attachments if attachment.media_type in ALLOWED_IMAGE_TYPES]
+        for attachment in image_attachments:
+            if Path(attachment.filename).name != attachment.filename or attachment.filename in {"", ".", ".."}:
+                raise RuntimeError(f"Unsafe attachment filename: {attachment.filename}")
+            if attachment.file_size > MAX_ATTACHMENT_BYTES:
+                raise RuntimeError(f"Attachment exceeds 10 MB limit: {attachment.filename}")
+            data = client.download_attachment(attachment)
+            if len(data) > MAX_ATTACHMENT_BYTES:
+                raise RuntimeError(f"Attachment exceeds 10 MB limit: {attachment.filename}")
+            assets_dir.mkdir(parents=True, exist_ok=True)
+            (assets_dir / attachment.filename).write_bytes(data)
+        (article_dir / "index.md").write_text(page_to_markdown(page, image_attachments), encoding="utf-8")
     for article_dir in CONTENT.iterdir():
         if article_dir.is_dir() and article_dir.name not in desired:
             shutil.rmtree(article_dir)
