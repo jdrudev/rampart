@@ -26,6 +26,7 @@ def sync() -> None:
         os.environ["CONFLUENCE_API_TOKEN"],
         os.environ.get("CONFLUENCE_CLOUD_ID"),
     )
+    print(f"Using Confluence API endpoint: {client.api_base_url}")
     pages = client.list_published_pages(
         "portfolio-public",
         os.environ.get("CONFLUENCE_SPACE", "Portfolio"),

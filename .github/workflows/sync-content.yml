@@ -21,7 +21,7 @@ jobs:
           CONFLUENCE_BASE_URL: ${{ secrets.CONFLUENCE_BASE_URL }}
           CONFLUENCE_EMAIL: ${{ secrets.CONFLUENCE_EMAIL }}
           CONFLUENCE_API_TOKEN: ${{ secrets.CONFLUENCE_API_TOKEN }}
-          CONFLUENCE_CLOUD_ID: ${{ vars.CONFLUENCE_CLOUD_ID }}
+          CONFLUENCE_CLOUD_ID: ${{ vars.CONFLUENCE_CLOUD_ID || '48f46fb8-93ef-4225-80cd-c5d3d9a098d9' }}
           CONFLUENCE_SPACE: ${{ vars.CONFLUENCE_SPACE || 'Portfolio' }}
           CONFLUENCE_CONTENT_TYPE: ${{ vars.CONFLUENCE_CONTENT_TYPE || 'page' }}
         run: python -m scripts.confluence.sync
