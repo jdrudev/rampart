@@ -41,4 +41,6 @@ def page_to_markdown(page: ConfluencePage, attachments: list[ConfluenceAttachmen
     parser = _MarkdownParser({attachment.filename: attachment for attachment in attachments or []})
     parser.feed(page.body_html)
     body = re.sub(r"\n{3,}", "\n\n", "".join(parser.output)).strip()
-    return f"---\ntitle: {page.title!r}\ndescription: Generated from Confluence.\ndate: {page.updated_at[:10]}\nupdated: {page.updated_at[:10]}\ntags: []\nconfluence_id: {page.page_id!r}\nsource_url: {page.source_url!r}\n---\n\n{body}\n"
+    tags = [label for label in page.labels if label != "portfolio-public"]
+    tag_lines = "\n".join(f"  - {tag!r}" for tag in tags) or "  []"
+    return f"---\ntitle: {page.title!r}\ndescription: Generated from Confluence.\ndate: {page.updated_at[:10]}\nupdated: {page.updated_at[:10]}\ntags:\n{tag_lines}\nconfluence_id: {page.page_id!r}\nsource_url: {page.source_url!r}\n---\n\n{body}\n"

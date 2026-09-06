@@ -36,12 +36,14 @@ def sync() -> None:
     )
     desired: set[str] = set()
     for page in pages:
+        print(f"Processing Confluence page {page.page_id}: {page.title}")
         slug = slugify(page.title)
         desired.add(slug)
         article_dir = CONTENT / slug
         assets_dir = article_dir / "assets"
         article_dir.mkdir(parents=True, exist_ok=True)
         attachments = client.get_attachments(page.page_id)
+        print(f"Found {len(attachments)} attachment(s) for page {page.page_id}")
         image_attachments = [attachment for attachment in attachments if attachment.media_type in ALLOWED_IMAGE_TYPES]
         for attachment in image_attachments:
             if Path(attachment.filename).name != attachment.filename or attachment.filename in {"", ".", ".."}:

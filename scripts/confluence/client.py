@@ -48,13 +48,24 @@ class ConfluenceClient:
                     return json.load(response)
             except HTTPError as error:
                 if error.code == 401:
+                    if "/child/attachment" in path:
+                        raise RuntimeError(
+                            f"Confluence attachment access failed (401) for {path}. "
+                            "Page discovery may have succeeded, but this token was rejected while reading attachments. "
+                            "Check the token's attachment/content-read scope and the exact token owner email."
+                        ) from error
                     raise RuntimeError(
-                        "Confluence authentication failed (401). Check the exact account email, "
-                        "API token value, Cloud ID, and scoped-token gateway endpoint."
+                        f"Confluence page/API authentication failed (401) for {path}. "
+                        "Check the exact account email, API token value, Cloud ID, and scoped-token gateway endpoint."
                     ) from error
                 if error.code == 403:
+                    if "/child/attachment" in path:
+                        raise RuntimeError(
+                            f"Confluence attachment access denied (403) for {path}. "
+                            "The token authenticated, but the account/token cannot read page attachments."
+                        ) from error
                     raise RuntimeError(
-                        "Confluence authorization failed (403). Authentication succeeded, "
+                        f"Confluence authorization failed (403) for {path}. Authentication succeeded, "
                         "but the token or account cannot access the requested Confluence resource."
                     ) from error
                 if error.code not in (429, 500, 502, 503, 504) or attempt == 2:

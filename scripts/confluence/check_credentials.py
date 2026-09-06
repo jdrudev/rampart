@@ -119,6 +119,19 @@ def main() -> int:
             print(f"Publication query: PASS ({len(results)} matching {content_type}(s) in {space})", flush=True)
             for result in results:
                 print(f"- {result.get('title', '<untitled>')} [{result.get('id', 'no-id')}]")
+            for result in results:
+                page_id = result.get("id")
+                if not page_id:
+                    continue
+                try:
+                    attachments = request(client.api_base_url, email, token, f"/wiki/rest/api/content/{page_id}/child/attachment", {"limit": "1"})
+                    print(f"Attachments API ({page_id}): PASS ({len(attachments.get('results', []))} sample result(s))", flush=True)
+                except HTTPError as error:
+                    report_http_error(f"Attachments API ({page_id})", error)
+                    checks_failed = True
+                except URLError as error:
+                    print(f"Attachments API ({page_id}): FAIL (network error: {error.reason})", file=sys.stderr, flush=True)
+                    checks_failed = True
     except HTTPError as error:
         report_http_error("Publication query", error)
         checks_failed = True
