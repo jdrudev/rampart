@@ -10,7 +10,7 @@ confluence_id: '3309652'
 source_url: 'https://jdru.atlassian.net/wiki/spaces/Portfolio/pages/3309652/Blog+1+Jira+Test'
 ---
 
-This is a blog from confluence page, in portfolio space  
+This is a blog from confluence page, in portfolio space
 
 lets test some markdown
 
@@ -18,25 +18,24 @@ lets test some markdown
 
 ## header2
 
-underline
+<u>underline</u>
 
-bold
+**bold**
 
-italics
+*italics*
 
 bullet list
 
 - item1
-
 - item2
 
 number list
 
-- item1
-
-- item2
+1. item1
+2. item2
 
 Image:
+
 image end
 
 3
@@ -47,12 +46,8 @@ confluence action item
 centered text right here
 
 table
-colum1
-column2
-column3
-c1-1
-c2-1
-c3-1
-c1-2
-c2-2
-c3-2
+
+| **colum1** | **column2** | **column3** |
+| --- | --- | --- |
+| c1-1 | c2-1 | c3-1 |
+| c1-2 | c2-2 | c3-2 |
