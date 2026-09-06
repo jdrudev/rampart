@@ -46,6 +46,10 @@ def bearer_request(base_url: str, token: str, path: str, params: dict[str, str])
         return json.load(response)
 
 
+def basic_request(base_url: str, email: str, token: str, path: str, params: dict[str, str]) -> dict:
+    return request(base_url, email, token, path, params)
+
+
 def report_http_error(check: str, error: HTTPError) -> None:
     try:
         body = error.read().decode("utf-8", errors="replace")[:500]
@@ -139,12 +143,17 @@ def main() -> int:
                     continue
                 try:
                     attachments = bearer_request(client.api_base_url, token, f"/wiki/api/v2/pages/{page_id}/attachments", {"limit": "1"})
-                    print(f"Attachments API ({page_id}): PASS ({len(attachments.get('results', []))} sample result(s))", flush=True)
+                    print(f"Attachments API ({page_id}) Bearer: PASS ({len(attachments.get('results', []))} sample result(s))", flush=True)
                 except HTTPError as error:
-                    report_http_error(f"Attachments API ({page_id})", error)
-                    checks_failed = True
+                    report_http_error(f"Attachments API ({page_id}) Bearer", error)
+                    try:
+                        attachments = basic_request(client.api_base_url, email, token, f"/wiki/api/v2/pages/{page_id}/attachments", {"limit": "1"})
+                        print(f"Attachments API ({page_id}) Basic: PASS ({len(attachments.get('results', []))} sample result(s))", flush=True)
+                    except HTTPError as basic_error:
+                        report_http_error(f"Attachments API ({page_id}) Basic", basic_error)
+                        checks_failed = True
                 except URLError as error:
-                    print(f"Attachments API ({page_id}): FAIL (network error: {error.reason})", file=sys.stderr, flush=True)
+                    print(f"Attachments API ({page_id}) Bearer: FAIL (network error: {error.reason})", file=sys.stderr, flush=True)
                     checks_failed = True
                 except Exception as error:
                     print(f"Attachments API ({page_id}): FAIL (unexpected {type(error).__name__}: {error})", file=sys.stderr, flush=True)
