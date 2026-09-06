@@ -1,5 +1,5 @@
 ---
-title: "Identity boundaries are system boundaries"
+title: "TEST: Identity boundaries are system boundaries"
 description: "A practical look at where authentication ends and authorization begins."
 date: 2026-08-28
 tags:

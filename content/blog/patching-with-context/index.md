@@ -1,5 +1,5 @@
 ---
-title: "Patching with context"
+title: "TEST: Patching with context"
 description: "Why vulnerability remediation is a prioritization problem, not just a version update."
 date: 2026-07-22
 tags:

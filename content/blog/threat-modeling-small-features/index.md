@@ -1,5 +1,5 @@
 ---
-title: "Threat modeling small features"
+title: "TEST: Threat modeling small features"
 description: "A lightweight way to find security risks before implementation gets expensive."
 date: 2026-07-30
 tags:

@@ -1,5 +1,5 @@
 ---
-title: "Security work starts with making edges explicit"
+title: "TEST: Security work starts with making edges explicit"
 description: "Lessons from turning invisible security assumptions into useful engineering controls."
 date: 2026-09-04
 updated: 2026-09-04

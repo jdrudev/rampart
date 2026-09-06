@@ -1,5 +1,5 @@
 ---
-title: "Keeping secrets out of CI logs"
+title: "TEST: Keeping secrets out of CI logs"
 description: "A checklist for handling credentials safely in automated pipelines."
 date: 2026-08-07
 tags:

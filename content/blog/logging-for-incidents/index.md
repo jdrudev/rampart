@@ -1,5 +1,5 @@
 ---
-title: "Logging for incident response"
+title: "TEST: Logging for incident response"
 description: "What useful security telemetry looks like before an incident starts."
 date: 2026-08-21
 tags:

@@ -40,7 +40,7 @@ Posts live in `content/blog/` as Markdown or MDX files. Each post requires a tit
 
 Copy `.env.example` to a local environment and provide a read-only Confluence API token. The sync job only reads pages explicitly labelled `portfolio-public`; credentials are never committed or exposed to the browser.
 
-The scheduled GitHub Action requires repository secrets named `CONFLUENCE_BASE_URL`, `CONFLUENCE_EMAIL`, and `CONFLUENCE_API_TOKEN`. A failed API query stops the workflow before reconciliation so existing published content is preserved.
+The scheduled GitHub Action requires repository secrets named `CONFLUENCE_BASE_URL`, `CONFLUENCE_EMAIL`, and `CONFLUENCE_API_TOKEN`. `CONFLUENCE_BASE_URL` may be entered as either `tenant.atlassian.net` or `https://tenant.atlassian.net`; the client normalizes hostnames to HTTPS and rejects insecure URLs. A failed API query stops the workflow before reconciliation so existing published content is preserved.
 
 ## Custom domain
 

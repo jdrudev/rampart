@@ -1,5 +1,5 @@
 ---
-title: "A small dependency is still a security decision"
+title: "TEST: A small dependency is still a security decision"
 description: "Lessons from reviewing third-party packages in otherwise simple services."
 date: 2026-08-14
 tags:

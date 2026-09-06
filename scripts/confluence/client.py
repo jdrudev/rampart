@@ -6,6 +6,7 @@ import base64
 import json
 import time
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from .models import ConfluenceAttachment, ConfluencePage
@@ -13,7 +14,13 @@ from .models import ConfluenceAttachment, ConfluencePage
 
 class ConfluenceClient:
     def __init__(self, base_url: str, email: str, token: str, timeout: int = 20) -> None:
-        self.base_url = base_url.rstrip("/")
+        value = "".join(base_url.split())
+        if "://" not in value:
+            value = f"https://{value}"
+        parsed = urlsplit(value)
+        if parsed.scheme != "https" or not parsed.netloc:
+            raise ValueError("CONFLUENCE_BASE_URL must be an HTTPS hostname or URL")
+        self.base_url = value.rstrip("/")
         self.timeout = timeout
         credentials = base64.b64encode(f"{email}:{token}".encode()).decode()
         self.headers = {"Authorization": f"Basic {credentials}", "Accept": "application/json"}
