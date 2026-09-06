@@ -77,6 +77,18 @@ class ConfluenceClient:
             time.sleep(2**attempt)
         raise RuntimeError("Confluence request failed")
 
+    def _list_labels(self, page_id: str) -> tuple[str, ...]:
+        labels: list[str] = []
+        start = 0
+        while True:
+            params = urlencode({"limit": "50", "start": str(start)})
+            payload = self._get(f"/wiki/rest/api/content/{page_id}/label", params)
+            results = payload.get("results", [])
+            labels.extend(item["name"] for item in results if item.get("name"))
+            if len(results) < 50:
+                return tuple(labels)
+            start += 50
+
     def list_published_pages(self, label: str, space: str = "Portfolio", content_type: str = "page") -> list[ConfluencePage]:
         pages: list[ConfluencePage] = []
         start = 0
@@ -85,7 +97,7 @@ class ConfluenceClient:
             params = urlencode({"cql": cql, "expand": "body.storage,version,metadata.labels", "limit": "50", "start": str(start)})
             payload = self._get("/wiki/rest/api/content/search", params)
             for result in payload.get("results", []):
-                labels = tuple(item["name"] for item in result.get("metadata", {}).get("labels", {}).get("results", []))
+                labels = self._list_labels(result["id"])
                 pages.append(ConfluencePage(result["id"], result["title"], result.get("body", {}).get("storage", {}).get("value", ""), result.get("version", {}).get("when", ""), labels, f"{self.base_url}/wiki{result.get('_links', {}).get('webui', '')}"))
             if len(payload.get("results", [])) < 50:
                 return pages
