@@ -1,6 +1,6 @@
 # Rampart
 
-Rampart is an anonymous collection of cybersecurity engineering notes, lessons learned, and practical systems thinking.
+Rampart is a collection of cybersecurity engineering notes, lessons learned, and practical systems thinking.
 
 The production site is served at [rampart.jdru.dev](https://rampart.jdru.dev).
 
