@@ -2,19 +2,20 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import '../styles/global.css';
+import { siteCopy } from '../config/site';
 
 const posts = (await getCollection('blog')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 const base = import.meta.env.BASE_URL;
 ---
 <BaseLayout>
   <section class="hero shell">
-    <p class="eyebrow">Security engineering / lessons learned</p>
-    <h1>Rampart</h1>
-    <p class="lede">Notes on security engineering, systems, and the practical work of making technology more dependable.</p>
-    <a class="button-link" href={`${base}blogs/`}>Browse posts <span aria-hidden="true">↗</span></a>
+    <p class="eyebrow">{siteCopy.home.eyebrow}</p>
+    <h1>{siteCopy.home.title}</h1>
+    <p class="lede">{siteCopy.home.introduction}</p>
+    <a class="button-link" href={`${base}blogs/`}>{siteCopy.home.browsePosts} <span aria-hidden="true">↗</span></a>
   </section>
   <section class="notes shell">
-    <div class="section-heading"><h2>Recent posts</h2><a href={`${base}blogs/`}>All posts →</a></div>
+    <div class="section-heading"><h2>{siteCopy.home.recentPosts}</h2><a href={`${base}blogs/`}>{siteCopy.home.allPosts} →</a></div>
     <div class="post-list">
       {posts.slice(0, 3).map((post) => <a class="post-row" href={`${base}blog/${post.data.confluence_id}/`}><time datetime={post.data.date.toISOString()}>{post.data.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</time><h3>{post.data.title}</h3><span>↗</span></a>)}
     </div>

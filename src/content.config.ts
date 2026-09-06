@@ -9,7 +9,7 @@ const blog = defineCollection({
     date: z.coerce.date(),
     updated: z.coerce.date().optional(),
     tags: z.array(z.string()).default([]),
-    confluence_id: z.string().optional(),
+    confluence_id: z.string(),
     source_url: z.string().url().optional()
   })
 });

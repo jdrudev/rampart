@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import re
 import shutil
 from pathlib import Path
 
@@ -12,13 +11,8 @@ from .transform import page_to_markdown
 
 ROOT = Path(__file__).resolve().parents[2]
 CONTENT = ROOT / "content" / "blog"
-ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp", "image/svg+xml"}
+ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp"}
 MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
-
-
-def slugify(title: str) -> str:
-    value = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
-    return value[:80].rstrip("-")
 
 
 def sync() -> None:
@@ -35,13 +29,20 @@ def sync() -> None:
         os.environ.get("CONFLUENCE_CONTENT_TYPE", "page"),
     )
     desired: set[str] = set()
+    existing = {path.name for path in CONTENT.iterdir() if path.is_dir()} if CONTENT.exists() else set()
+    if not pages and existing and os.environ.get("CONFLUENCE_ALLOW_EMPTY_SYNC", "false").lower() != "true":
+        raise RuntimeError(
+            "Confluence returned zero published pages while local content exists. "
+            "Refusing to delete content; set CONFLUENCE_ALLOW_EMPTY_SYNC=true only for intentional removal."
+        )
     for page in pages:
         print(f"Processing Confluence page {page.page_id}: {page.title}")
-        slug = slugify(page.title)
-        desired.add(slug)
-        article_dir = CONTENT / slug
+        article_dir = CONTENT / page.page_id
+        desired.add(page.page_id)
         assets_dir = article_dir / "assets"
         article_dir.mkdir(parents=True, exist_ok=True)
+        if assets_dir.exists():
+            shutil.rmtree(assets_dir)
         attachments = client.get_attachments(page.page_id)
         print(f"Found {len(attachments)} attachment(s) for page {page.page_id}")
         image_attachments = [attachment for attachment in attachments if attachment.media_type in ALLOWED_IMAGE_TYPES]

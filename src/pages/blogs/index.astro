@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import '../../styles/global.css';
+import { siteCopy } from '../../config/site';
 
 const posts = (await getCollection('blog')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 const tags = [...new Set(posts.flatMap((post) => post.data.tags))].sort();
@@ -9,11 +10,11 @@ const base = import.meta.env.BASE_URL;
 ---
 <BaseLayout title="Posts | Rampart" description="Security engineering notes, lessons learned, and practical systems thinking.">
   <section class="blog-shell shell">
-    <p class="eyebrow">Posts</p>
-    <h1>Security engineering<br />in practice.</h1>
-    <div class="controls"><label class="search"><span>⌕</span><input id="post-search" type="search" placeholder="Search the archive" /></label><div class="filters"><button class="filter active" data-tag="all">All</button>{tags.map((tag) => <button class="filter" data-tag={tag}>{tag}</button>)}</div></div>
+    <p class="eyebrow">{siteCopy.navigation.posts}</p>
+    <h1>{siteCopy.posts.title}<br />{siteCopy.posts.titleLineTwo}</h1>
+    <div class="controls"><label class="search"><span>⌕</span><input id="post-search" type="search" placeholder={siteCopy.posts.searchPlaceholder} /></label><div class="filters"><button class="filter active" data-tag="all">{siteCopy.posts.allFilter}</button>{tags.map((tag) => <button class="filter" data-tag={tag}>{tag}</button>)}</div></div>
     <div class="archive">{posts.map((post) => <a class="archive-row" data-title={post.data.title.toLowerCase()} data-tags={post.data.tags.join(',')} href={`${base}blog/${post.data.confluence_id}/`}><time datetime={post.data.date.toISOString()}>{post.data.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</time><div><h2>{post.data.title}</h2><p>{post.data.description}</p><div class="tags">{post.data.tags.map((tag) => <span>{tag}</span>)}</div></div><span class="arrow">↗</span></a>)}</div>
-    <p id="empty" class="empty" hidden>No notes match that search.</p>
+    <p id="empty" class="empty" hidden>{siteCopy.posts.emptySearch}</p>
   </section>
 </BaseLayout>
 <script>

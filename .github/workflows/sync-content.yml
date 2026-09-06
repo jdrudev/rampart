@@ -26,6 +26,13 @@ jobs:
           CONFLUENCE_CONTENT_TYPE: ${{ vars.CONFLUENCE_CONTENT_TYPE || 'page' }}
         run: python -m scripts.confluence.sync
       - run: python scripts/validation/validate_content.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
       - name: Commit changed content
         run: |
           git config user.name github-actions
