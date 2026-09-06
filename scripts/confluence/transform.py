@@ -3,23 +3,17 @@
 from html.parser import HTMLParser
 import re
 
-from .models import ConfluenceAttachment, ConfluencePage
+from .models import ConfluencePage
 
 
 class _MarkdownParser(HTMLParser):
-    def __init__(self, attachments: dict[str, ConfluenceAttachment]) -> None:
+    def __init__(self) -> None:
         super().__init__()
         self.output: list[str] = []
         self.stack: list[str] = []
-        self.attachments = attachments
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag == "ri:attachment":
-            filename = dict(attrs).get("ri:filename")
-            attachment = self.attachments.get(filename or "")
-            if attachment:
-                self.output.append(f"\n![{attachment.filename}](./assets/{attachment.filename})\n")
-        elif tag in {"h1", "h2", "h3", "h4"}:
+        if tag in {"h1", "h2", "h3", "h4"}:
             self.output.append("\n" + "#" * int(tag[1]) + " ")
         elif tag == "li":
             self.output.append("\n- ")
@@ -37,8 +31,8 @@ class _MarkdownParser(HTMLParser):
         self.output.append(data)
 
 
-def page_to_markdown(page: ConfluencePage, attachments: list[ConfluenceAttachment] | None = None) -> str:
-    parser = _MarkdownParser({attachment.filename: attachment for attachment in attachments or []})
+def page_to_markdown(page: ConfluencePage) -> str:
+    parser = _MarkdownParser()
     parser.feed(page.body_html)
     body = re.sub(r"\n{3,}", "\n\n", "".join(parser.output)).strip()
     tags = [label for label in page.labels if label != "portfolio-public"]

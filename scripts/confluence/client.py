@@ -5,12 +5,11 @@ from __future__ import annotations
 import base64
 import json
 import time
-from urllib.parse import urlencode, urlsplit
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit
+from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
 
-from .models import ConfluenceAttachment, ConfluencePage
+from .models import ConfluencePage
 
 
 def _read_error_body(error: HTTPError, limit: int = 500) -> str:
@@ -22,7 +21,14 @@ def _read_error_body(error: HTTPError, limit: int = 500) -> str:
 
 
 class ConfluenceClient:
-    def __init__(self, base_url: str, email: str, token: str, cloud_id: str | None = None, timeout: int = 20) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        email: str,
+        token: str,
+        cloud_id: str | None = None,
+        timeout: int = 20,
+    ) -> None:
         value = "".join(base_url.split())
         if "://" not in value:
             value = f"https://{value}"
@@ -35,8 +41,6 @@ class ConfluenceClient:
         self.api_base_url = f"https://api.atlassian.com/ex/confluence/{resolved_cloud_id}"
         credentials = base64.b64encode(f"{email.strip()}:{token.strip()}".encode()).decode()
         self.headers = {"Authorization": f"Basic {credentials}", "Accept": "application/json"}
-        self.download_headers = {"Authorization": f"Bearer {token.strip()}", "Accept": "application/octet-stream"}
-        self.site_headers = {"Authorization": f"Basic {credentials}", "Accept": "application/octet-stream"}
 
     def _resolve_cloud_id(self) -> str:
         try:
@@ -86,47 +90,3 @@ class ConfluenceClient:
             if len(payload.get("results", [])) < 50:
                 return pages
             start += 50
-
-    def get_attachments(self, page_id: str) -> list[ConfluenceAttachment]:
-        attachments: list[ConfluenceAttachment] = []
-        start = 0
-        while True:
-            payload = self._get(f"/wiki/api/v2/pages/{page_id}/attachments", urlencode({"limit": "50", "start": str(start)}))
-            results = payload.get("results", [])
-            attachments.extend(ConfluenceAttachment(item["id"], item["title"], item.get("mediaType", ""), self._attachment_download_url(item), item.get("fileSize", 0), self._legacy_attachment_url(item.get("downloadLink", ""))) for item in results)
-            if len(results) < 50:
-                return attachments
-            start += 50
-
-    def _attachment_download_url(self, item: dict) -> str:
-        return f"{self.api_base_url}/wiki/api/v2/attachments/{item['id']}/download"
-
-    def _legacy_attachment_url(self, link: str) -> str | None:
-        if not link:
-            return None
-        if urlsplit(link).scheme and urlsplit(link).netloc:
-            return link
-        if link.startswith("/wiki/"):
-            return f"{self.base_url}{link}"
-        if link.startswith("/"):
-            return f"{self.base_url}/wiki{link}"
-        return None
-
-    def download_attachment(self, attachment: ConfluenceAttachment) -> bytes:
-        try:
-            request = Request(attachment.download_url, headers=self.download_headers)
-            with urlopen(request, timeout=self.timeout) as response:
-                return response.read(10 * 1024 * 1024 + 1)
-        except HTTPError as error:
-            if not attachment.fallback_download_url:
-                body = _read_error_body(error)
-                raise RuntimeError(f"Attachment download failed with HTTP {error.code}. Response body: {body}") from error
-            try:
-                request = Request(attachment.fallback_download_url, headers=self.site_headers)
-                with urlopen(request, timeout=self.timeout) as response:
-                    return response.read(10 * 1024 * 1024 + 1)
-            except HTTPError as fallback_error:
-                body = _read_error_body(fallback_error)
-                raise RuntimeError(f"Attachment download failed via v2 ({error.code}) and legacy link ({fallback_error.code}). Response body: {body}") from fallback_error
-        except URLError as error:
-            raise RuntimeError(f"Attachment download failed: {error.reason}") from error

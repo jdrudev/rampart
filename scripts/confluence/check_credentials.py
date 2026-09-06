@@ -39,12 +39,6 @@ def request(base_url: str, email: str, token: str, path: str, params: dict[str, 
         return json.load(response)
 
 
-def download_request(url: str, email: str, token: str) -> bytes:
-    request = Request(url, headers={"Authorization": f"Bearer {token.strip()}", "Accept": "application/octet-stream"})
-    with urlopen(request, timeout=20) as response:
-        return response.read(1)
-
-
 def report_http_error(check: str, error: HTTPError) -> None:
     try:
         body = error.read().decode("utf-8", errors="replace")[:500]
@@ -132,31 +126,6 @@ def main() -> int:
             print(f"Publication query: PASS ({len(results)} matching {content_type}(s) in {space})", flush=True)
             for result in results:
                 print(f"- {result.get('title', '<untitled>')} [{result.get('id', 'no-id')}]")
-            for result in results:
-                page_id = result.get("id")
-                if not page_id:
-                    continue
-                try:
-                    attachments = request(client.api_base_url, email, token, f"/wiki/api/v2/pages/{page_id}/attachments", {"limit": "1"})
-                    print(f"Attachments API ({page_id}): PASS ({len(attachments.get('results', []))} sample result(s))", flush=True)
-                    if attachments.get("results"):
-                        attachment = attachments["results"][0]
-                        download_url = f"{client.api_base_url}/wiki/api/v2/attachments/{attachment['id']}/download"
-                        try:
-                            download_request(download_url, email, token)
-                            print(f"Attachment download ({page_id}): PASS", flush=True)
-                        except HTTPError as error:
-                            report_http_error(f"Attachment download ({page_id})", error)
-                            checks_failed = True
-                except HTTPError as error:
-                    report_http_error(f"Attachments API ({page_id})", error)
-                    checks_failed = True
-                except URLError as error:
-                    print(f"Attachments API ({page_id}) Bearer: FAIL (network error: {error.reason})", file=sys.stderr, flush=True)
-                    checks_failed = True
-                except Exception as error:
-                    print(f"Attachments API ({page_id}): FAIL (unexpected {type(error).__name__}: {error})", file=sys.stderr, flush=True)
-                    checks_failed = True
     except HTTPError as error:
         report_http_error("Publication query", error)
         checks_failed = True
