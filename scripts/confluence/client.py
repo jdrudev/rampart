@@ -37,15 +37,19 @@ class ConfluenceClient:
             except HTTPError as error:
                 if error.code == 401:
                     raise RuntimeError(
-                        "Confluence authentication failed (401). "
-                        "Use the exact Atlassian account email with an Atlassian API token; "
-                        "OAuth access tokens are not supported by this Basic-auth client."
+                        "Confluence authentication failed (401). Check the exact account email, "
+                        "API token value, Cloud ID, and scoped-token gateway endpoint."
+                    ) from error
+                if error.code == 403:
+                    raise RuntimeError(
+                        "Confluence authorization failed (403). Authentication succeeded, "
+                        "but the token or account cannot access the requested Confluence resource."
                     ) from error
                 if error.code not in (429, 500, 502, 503, 504) or attempt == 2:
                     raise RuntimeError(f"Confluence request failed with HTTP {error.code}") from error
             except URLError as error:
                 if attempt == 2:
-                    raise RuntimeError("Confluence request failed") from error
+                    raise RuntimeError(f"Confluence network request failed: {error.reason}") from error
             time.sleep(2**attempt)
         raise RuntimeError("Confluence request failed")
 

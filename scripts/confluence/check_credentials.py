@@ -41,20 +41,20 @@ def request(base_url: str, email: str, token: str, path: str, params: dict[str, 
 
 def report_http_error(check: str, error: HTTPError) -> None:
     if error.code == 401:
-        print(f"{check}: FAIL (401 Unauthorized)", file=sys.stderr)
+        print(f"{check}: FAIL (401 Unauthorized)", file=sys.stderr, flush=True)
         print("The email/token pair or scoped-token gateway configuration is not accepted. Check the exact account email, API token value, and CONFLUENCE_CLOUD_ID. See README.md for required permissions.", file=sys.stderr)
     elif error.code == 403:
-        print(f"{check}: FAIL (403 Forbidden)", file=sys.stderr)
+        print(f"{check}: FAIL (403 Forbidden)", file=sys.stderr, flush=True)
         print("Authentication succeeded, but the token or account lacks the permission required by this endpoint. See README.md for required permissions and space access.", file=sys.stderr)
     else:
-        print(f"{check}: FAIL (HTTP {error.code})", file=sys.stderr)
+        print(f"{check}: FAIL (HTTP {error.code})", file=sys.stderr, flush=True)
 
 
 def main() -> int:
     load_dotenv()
     missing = [name for name in ("CONFLUENCE_BASE_URL", "CONFLUENCE_EMAIL", "CONFLUENCE_API_TOKEN") if not os.environ.get(name)]
     if missing:
-        print(f"Missing environment variable(s): {', '.join(missing)}", file=sys.stderr)
+        print(f"Missing environment variable(s): {', '.join(missing)}", file=sys.stderr, flush=True)
         return 2
 
     try:
@@ -65,13 +65,13 @@ def main() -> int:
             os.environ.get("CONFLUENCE_CLOUD_ID"),
         )
     except ValueError as error:
-        print(f"Configuration error: {error}", file=sys.stderr)
+        print(f"Configuration error: {error}", file=sys.stderr, flush=True)
         return 2
 
     email = os.environ["CONFLUENCE_EMAIL"]
     token = os.environ["CONFLUENCE_API_TOKEN"]
-    print(f"Testing Confluence tenant: {client.base_url}")
-    print(f"Testing API endpoint: {client.api_base_url}")
+    print(f"Testing Confluence tenant: {client.base_url}", flush=True)
+    print(f"Testing API endpoint: {client.api_base_url}", flush=True)
 
     space = os.environ.get("CONFLUENCE_SPACE", "Portfolio")
     content_type = os.environ.get("CONFLUENCE_CONTENT_TYPE", "page")
@@ -79,26 +79,32 @@ def main() -> int:
 
     try:
         identity = request(client.api_base_url, email, token, "/wiki/rest/api/user/current", {})
-        print(f"Identity: PASS ({identity.get('displayName', 'account authenticated')})")
+        print(f"Identity: PASS ({identity.get('displayName', 'account authenticated')})", flush=True)
     except HTTPError as error:
         report_http_error("Identity", error)
         return 1
     except URLError as error:
-        print(f"Identity: FAIL (network error: {error.reason})", file=sys.stderr)
+        print(f"Identity: FAIL (network error: {error.reason})", file=sys.stderr, flush=True)
         return 1
 
     try:
         spaces = request(client.api_base_url, email, token, "/wiki/rest/api/space", {"limit": "1"})
-        print(f"Space API: PASS ({len(spaces.get('results', []))} sample result(s))")
+        print(f"Space API: PASS ({len(spaces.get('results', []))} sample result(s))", flush=True)
     except HTTPError as error:
         report_http_error("Space API", error)
+        checks_failed = True
+    except URLError as error:
+        print(f"Space API: FAIL (network error: {error.reason})", file=sys.stderr, flush=True)
         checks_failed = True
 
     try:
         content = request(client.api_base_url, email, token, "/wiki/rest/api/content/search", {"cql": f'type = "{content_type}"', "limit": "1"})
-        print(f"Content API ({content_type}): PASS ({len(content.get('results', []))} sample result(s))")
+        print(f"Content API ({content_type}): PASS ({len(content.get('results', []))} sample result(s))", flush=True)
     except HTTPError as error:
         report_http_error(f"Content API ({content_type})", error)
+        checks_failed = True
+    except URLError as error:
+        print(f"Content API ({content_type}): FAIL (network error: {error.reason})", file=sys.stderr, flush=True)
         checks_failed = True
 
     cql = f'space = "{space}" AND type = "{content_type}" AND label = "portfolio-public"'
@@ -106,15 +112,18 @@ def main() -> int:
         payload = request(client.api_base_url, email, token, "/wiki/rest/api/content/search", {"cql": cql, "limit": "50", "expand": "body.storage,version,history,metadata.labels"})
         results = payload.get("results", [])
         if not results:
-            print(f"Publication query: FAIL (0 matching {content_type}(s) in {space})", file=sys.stderr)
-            print('Check the space, content type, and exact "portfolio-public" label.', file=sys.stderr)
+            print(f"Publication query: FAIL (0 matching {content_type}(s) in {space})", file=sys.stderr, flush=True)
+            print('Check the space, content type, and exact "portfolio-public" label.', file=sys.stderr, flush=True)
             checks_failed = True
         else:
-            print(f"Publication query: PASS ({len(results)} matching {content_type}(s) in {space})")
+            print(f"Publication query: PASS ({len(results)} matching {content_type}(s) in {space})", flush=True)
             for result in results:
                 print(f"- {result.get('title', '<untitled>')} [{result.get('id', 'no-id')}]")
     except HTTPError as error:
         report_http_error("Publication query", error)
+        checks_failed = True
+    except URLError as error:
+        print(f"Publication query: FAIL (network error: {error.reason})", file=sys.stderr, flush=True)
         checks_failed = True
 
     return 1 if checks_failed else 0

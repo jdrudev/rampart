@@ -14,12 +14,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Verify Confluence gateway configuration
+        env:
+          CONFLUENCE_CLOUD_ID: ${{ vars.CONFLUENCE_CLOUD_ID }}
+        run: |
+          if [[ -z "$CONFLUENCE_CLOUD_ID" ]]; then
+            echo "::error::Repository variable CONFLUENCE_CLOUD_ID is required for scoped Confluence tokens."
+            exit 1
+          fi
       - name: Check authentication and publication access
         env:
           CONFLUENCE_BASE_URL: ${{ secrets.CONFLUENCE_BASE_URL }}
           CONFLUENCE_EMAIL: ${{ secrets.CONFLUENCE_EMAIL }}
           CONFLUENCE_API_TOKEN: ${{ secrets.CONFLUENCE_API_TOKEN }}
-          CONFLUENCE_CLOUD_ID: ${{ vars.CONFLUENCE_CLOUD_ID || '48f46fb8-93ef-4225-80cd-c5d3d9a098d9' }}
+          CONFLUENCE_CLOUD_ID: ${{ vars.CONFLUENCE_CLOUD_ID }}
           CONFLUENCE_SPACE: ${{ vars.CONFLUENCE_SPACE || 'Portfolio' }}
           CONFLUENCE_CONTENT_TYPE: ${{ vars.CONFLUENCE_CONTENT_TYPE || 'page' }}
         run: python -m scripts.confluence.check_credentials

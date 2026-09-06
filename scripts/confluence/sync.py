@@ -46,4 +46,8 @@ def sync() -> None:
 
 
 if __name__ == "__main__":
-    sync()
+    try:
+        sync()
+    except (KeyError, RuntimeError, ValueError) as error:
+        print(f"Confluence sync failed: {error}")
+        raise SystemExit(1)
