@@ -3,7 +3,9 @@ title: 'Blog #1 Jira Test'
 description: Generated from Confluence.
 date: 2026-09-06
 updated: 2026-09-06
-tags: []
+tags:
+  - 'hello-world'
+  - 'testing'
 confluence_id: '3309652'
 source_url: 'https://jdru.atlassian.net/wiki/spaces/Portfolio/pages/3309652/Blog+1+Jira+Test'
 ---
