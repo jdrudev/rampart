@@ -21,7 +21,7 @@ def slugify(title: str) -> str:
 
 def sync() -> None:
     client = ConfluenceClient(os.environ["CONFLUENCE_BASE_URL"], os.environ["CONFLUENCE_EMAIL"], os.environ["CONFLUENCE_API_TOKEN"])
-    pages = client.list_blog_posts("portfolio-public")
+    pages = client.list_blog_posts("portfolio-public", os.environ.get("CONFLUENCE_SPACE", "Portfolio"))
     desired: set[str] = set()
     for page in pages:
         slug = slugify(page.title)
