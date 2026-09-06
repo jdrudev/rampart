@@ -1,0 +1,15 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import '../../styles/global.css';
+
+export async function getStaticPaths() { const posts = await getCollection('blog'); return posts.map((post) => ({ params: { slug: post.id }, props: { post } })); }
+const { post } = Astro.props;
+const { Content } = await render(post);
+---
+<BaseLayout title={`${post.data.title} | Rampart`} description={post.data.description}>
+  <article class="article shell"><a class="back" href="../">← All posts</a><header><p class="eyebrow">{post.data.tags.join(' / ')}</p><h1>{post.data.title}</h1><p class="article-description">{post.data.description}</p><time datetime={post.data.date.toISOString()}>{post.data.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</time></header><div class="prose"><Content /></div></article>
+</BaseLayout>
+<style>
+  .article { padding: 65px 0 110px; }.back { color: var(--muted); font: .68rem var(--mono); text-decoration: none; text-transform: uppercase; }.back:hover { color: var(--accent); }.article header { max-width: 800px; margin: 90px auto 65px; }.article h1 { margin: 20px 0; font-size: clamp(2.8rem, 6vw, 5.8rem); line-height: .98; letter-spacing: -.07em; }.article-description { color: var(--muted); font-size: 1.05rem; line-height: 1.6; }.article time { color: var(--muted); font: .68rem var(--mono); text-transform: uppercase; }.prose { max-width: 700px; margin: auto; font-size: 1.04rem; line-height: 1.8; }.prose :global(h2) { margin-top: 2.8em; font-size: 1.8rem; letter-spacing: -.05em; line-height: 1.1; }.prose :global(a) { color: var(--accent); }.prose :global(pre) { overflow-x: auto; padding: 22px; background: #080b10; border: 1px solid var(--line); color: #dce8f2; font-size: .8rem; line-height: 1.6; }.prose :global(code) { font-family: var(--mono); }.prose :global(blockquote) { margin: 2em 0; padding: 4px 0 4px 20px; border-left: 2px solid var(--accent); color: var(--muted); }
+</style>

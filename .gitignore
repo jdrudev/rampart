@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.astro/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+coverage/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+.python-version
+.env
+.env.*
+!.env.example

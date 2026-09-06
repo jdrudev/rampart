@@ -1,0 +1,41 @@
+---
+const { title = 'Rampart | Security engineering notes', description = 'Security engineering notes, lessons learned, and practical systems thinking.' } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="wordmark" href={`${import.meta.env.BASE_URL}`}>RAMPART</a>
+      <nav aria-label="Primary navigation">
+        <a href={`${import.meta.env.BASE_URL}blogs/`}>Posts</a>
+      </nav>
+    </header>
+    <main><slot /></main>
+    <footer class="site-footer">
+      <span>RAMPART</span>
+      <span>Security engineering notes</span>
+    </footer>
+  </body>
+</html>
+<style is:global>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap');
+  :root { --ink: #e8edf2; --muted: #8d9aa8; --paper: #0d1117; --panel: #151c25; --line: #28323d; --accent: #8eb6d9; --deep: #dbe7f1; --serif: 'Manrope', sans-serif; --mono: 'DM Mono', monospace; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scrollbar-gutter: stable; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--serif); }
+  a { color: inherit; }
+  .site-header, .site-footer { width: min(920px, calc(100% - 48px)); margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+  .site-header { padding: 26px 0; border-bottom: 1px solid var(--line); }
+  .wordmark { color: var(--ink); font-weight: 700; font-size: .82rem; text-decoration: none; letter-spacing: .16em; }
+  nav { display: flex; gap: 25px; font: 500 .68rem var(--mono); text-transform: uppercase; letter-spacing: .05em; }
+  nav a { text-decoration: none; }
+  nav a:hover { color: var(--accent); }
+  .site-footer { padding: 42px 0 30px; border-top: 1px solid var(--line); color: var(--muted); font: .65rem var(--mono); text-transform: uppercase; letter-spacing: .04em; }
+  @media (max-width: 640px) { .site-header, .site-footer { width: min(100% - 32px, 920px); } .site-footer { display: block; line-height: 1.8; } nav { gap: 14px; } }
+</style>

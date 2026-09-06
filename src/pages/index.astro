@@ -1,0 +1,26 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import '../styles/global.css';
+
+const posts = (await getCollection('blog')).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const base = import.meta.env.BASE_URL;
+---
+<BaseLayout>
+  <section class="hero shell">
+    <p class="eyebrow">Security engineering / lessons learned</p>
+    <h1>Rampart</h1>
+    <p class="lede">Notes on security engineering, systems, and the practical work of making technology more dependable.</p>
+    <a class="button-link" href={`${base}blogs/`}>Browse posts <span aria-hidden="true">↗</span></a>
+  </section>
+  <section class="notes shell">
+    <div class="section-heading"><h2>Recent posts</h2><a href={`${base}blogs/`}>All posts →</a></div>
+    <div class="post-list">
+      {posts.slice(0, 3).map((post) => <a class="post-row" href={`${base}blogs/${post.id}/`}><time datetime={post.data.date.toISOString()}>{post.data.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</time><h3>{post.data.title}</h3><span>↗</span></a>)}
+    </div>
+  </section>
+</BaseLayout>
+<style>
+  .hero { min-height: 430px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; border-bottom: 1px solid var(--line); }.hero h1 { margin: 18px 0 14px; font-size: clamp(3.8rem, 9vw, 6.5rem); line-height: .9; letter-spacing: -.09em; }.lede { max-width: 450px; margin: 0 0 26px; color: var(--muted); font-size: 1rem; line-height: 1.6; }.notes { padding-top: 70px; }.post-row { display: grid; grid-template-columns: 110px 1fr 25px; align-items: center; gap: 18px; padding: 17px 0; border-bottom: 1px solid var(--line); text-decoration: none; }.post-row:hover h3 { color: var(--accent); }.post-row time { color: var(--muted); font: .63rem var(--mono); text-transform: uppercase; }.post-row h3 { margin: 0; font-size: 1.08rem; letter-spacing: -.03em; transition: color .2s; }.post-row span { color: var(--accent); font-size: 1rem; text-align: right; }
+  @media (max-width: 500px) { .shell { width: calc(100% - 32px); }.hero { min-height: 390px; }.hero h1 { font-size: 4.5rem; }.post-row { grid-template-columns: 82px 1fr 18px; gap: 10px; }.post-row h3 { font-size: 1rem; } }
+</style>
