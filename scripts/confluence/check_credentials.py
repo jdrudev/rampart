@@ -39,6 +39,12 @@ def request(base_url: str, email: str, token: str, path: str, params: dict[str, 
         return json.load(response)
 
 
+def download_request(url: str, token: str) -> bytes:
+    request = Request(url, headers={"Authorization": f"Bearer {token.strip()}", "Accept": "application/octet-stream"})
+    with urlopen(request, timeout=20) as response:
+        return response.read(1)
+
+
 def report_http_error(check: str, error: HTTPError) -> None:
     try:
         body = error.read().decode("utf-8", errors="replace")[:500]
@@ -133,6 +139,16 @@ def main() -> int:
                 try:
                     attachments = request(client.api_base_url, email, token, f"/wiki/api/v2/pages/{page_id}/attachments", {"limit": "1"})
                     print(f"Attachments API ({page_id}): PASS ({len(attachments.get('results', []))} sample result(s))", flush=True)
+                    if attachments.get("results"):
+                        attachment = attachments["results"][0]
+                        download_url = attachment.get("downloadLink")
+                        if download_url:
+                            try:
+                                download_request(download_url, token)
+                                print(f"Attachment download ({page_id}): PASS", flush=True)
+                            except HTTPError as error:
+                                report_http_error(f"Attachment download ({page_id})", error)
+                                checks_failed = True
                 except HTTPError as error:
                     report_http_error(f"Attachments API ({page_id})", error)
                     checks_failed = True

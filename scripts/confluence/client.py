@@ -35,6 +35,7 @@ class ConfluenceClient:
         self.api_base_url = f"https://api.atlassian.com/ex/confluence/{resolved_cloud_id}"
         credentials = base64.b64encode(f"{email.strip()}:{token.strip()}".encode()).decode()
         self.headers = {"Authorization": f"Basic {credentials}", "Accept": "application/json"}
+        self.bearer_headers = {"Authorization": f"Bearer {token.strip()}", "Accept": "application/octet-stream"}
 
     def _resolve_cloud_id(self) -> str:
         try:
@@ -91,13 +92,13 @@ class ConfluenceClient:
         while True:
             payload = self._get(f"/wiki/api/v2/pages/{page_id}/attachments", urlencode({"limit": "50", "start": str(start)}))
             results = payload.get("results", [])
-            attachments.extend(ConfluenceAttachment(item["id"], item["title"], item.get("mediaType", ""), f"{self.api_base_url}/wiki/api/v2/attachments/{item['id']}/download", item.get("fileSize", 0)) for item in results)
+            attachments.extend(ConfluenceAttachment(item["id"], item["title"], item.get("mediaType", ""), item.get("downloadLink", f"{self.api_base_url}/wiki/api/v2/attachments/{item['id']}/download"), item.get("fileSize", 0)) for item in results)
             if len(results) < 50:
                 return attachments
             start += 50
 
     def download_attachment(self, attachment: ConfluenceAttachment) -> bytes:
-        request = Request(attachment.download_url, headers=self.headers)
+        request = Request(attachment.download_url, headers=self.bearer_headers)
         try:
             with urlopen(request, timeout=self.timeout) as response:
                 return response.read(10 * 1024 * 1024 + 1)
