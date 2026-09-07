@@ -96,11 +96,7 @@ note
 > Markdown conversion should preserve quoted content as a blockquote and avoid flattening it into a regular paragraph.
 
 ```
-function transform(input) {
-  return input.trim().toUpperCase();
-}
-
-console.log(transform('native confluence formatting'));
+jswide760truefunction transform(input) { return input.trim().toUpperCase(); } console.log(transform('native confluence formatting'));
 ```
 
 ### 6. Table Formatting
