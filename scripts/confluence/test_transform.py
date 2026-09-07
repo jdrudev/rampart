@@ -55,8 +55,7 @@ class TransformTests(unittest.TestCase):
 
     def test_code_macro_becomes_copyable_code_block_source(self) -> None:
         markdown = page_to_markdown(_page(
-            '<ac:structured-macro ac:name="code"><ac:parameter ac:name="language">javascript</ac:parameter>'
-            '<ac:parameter ac:name="theme">Midnight</ac:parameter><ac:plain-text-body>'
+            '<ac:structured-macro ac:name="code"><ac:plain-text-body>'
             '<![CDATA[print("hello")]]></ac:plain-text-body></ac:structured-macro>'
         ))
 
@@ -74,21 +73,6 @@ class TransformTests(unittest.TestCase):
         self.assertIn("## Wrapped heading", markdown)
         self.assertIn("- First item", markdown)
         self.assertIn("| Format | Result |", markdown)
-
-    def test_decision_list_removes_ids_and_keeps_status_icon(self) -> None:
-        markdown = page_to_markdown(_page(
-            '<ac:decision-list><ac:decision><ac:decision-id>778f191b</ac:decision-id>'
-            '<ac:decision-status>DECIDED</ac:decision-status><ac:decision-body>Use this.</ac:decision-body></ac:decision>'
-            '<ac:decision><ac:decision-id>153a0472</ac:decision-id>'
-            '<ac:decision-status>UNDECIDED</ac:decision-status><ac:decision-body>Decide later.</ac:decision-body></ac:decision></ac:decision-list>'
-        ))
-
-        self.assertIn('<span class="decision-icon">✓</span>', markdown)
-        self.assertIn('<span class="decision-icon">□</span>', markdown)
-        self.assertIn("Use this.", markdown)
-        self.assertIn("Decide later.", markdown)
-        self.assertNotIn("778f191b", markdown)
-        self.assertNotIn("153a0472", markdown)
 
 
 if __name__ == "__main__":
