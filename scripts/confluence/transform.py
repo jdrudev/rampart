@@ -151,8 +151,8 @@ def _render_block(node: _Node) -> str:
     if node.name in UNSUPPORTED_MACROS:
         macro = node.attrs.get("ac:name", "unknown")
         body = _render_children(node).strip()
-        if macro in {"info", "note", "success", "warning", "error", "tip"}:
-            kind = "success" if macro == "tip" else macro
+        if macro in {"info", "note", "success", "warning", "error", "danger", "tip"}:
+            kind = "success" if macro == "tip" else "error" if macro == "danger" else macro
             return f'<div class="callout callout-{kind}"><strong>{kind.title()}</strong>\n\n{body}</div>'
         if macro in {"code", "noformat"}:
             return f"```\n{_plain(node).strip()}\n```"
