@@ -51,12 +51,30 @@ class _DocumentParser(HTMLParser):
 
 UNSUPPORTED_MACROS = {"ac:structured-macro", "ac:macro"}
 BLOCK_NODES = {"p", "div", "section", "article", "blockquote", "ul", "ol", "pre", "table", "ac:task-list"}
+DECISION_STATUSES = {"decided", "complete", "completed"}
 
 
 def _plain(node: _Node | str) -> str:
     if isinstance(node, str):
         return re.sub(r"\s+", " ", node)
     return "".join(_plain(child) for child in node.children)
+
+
+def _raw_text(node: _Node | str) -> str:
+    if isinstance(node, str):
+        return node
+    return "".join(_raw_text(child) for child in node.children)
+
+
+def _code_text(node: _Node) -> str:
+    for child in node.children:
+        if isinstance(child, _Node) and child.name in {"ac:plain-text-body", "ac:plain-text-body"}:
+            return _raw_text(child)
+        if isinstance(child, _Node):
+            result = _code_text(child)
+            if result:
+                return result
+    return ""
 
 
 def _safe_url(value: str) -> str | None:
@@ -155,7 +173,8 @@ def _render_block(node: _Node) -> str:
             kind = "success" if macro == "tip" else "error" if macro == "danger" else macro
             return f'<div class="callout callout-{kind}"><strong>{kind.title()}</strong>\n\n{body}</div>'
         if macro in {"code", "noformat"}:
-            return f"```\n{_plain(node).strip()}\n```"
+            code = _code_text(node).strip() or _raw_text(node).strip()
+            return f"```\n{code}\n```"
         if macro == "expand":
             return f'<details class="expand"><summary>{_inline(node).strip() or "Details"}</summary>\n\n{body}\n\n</details>'
         return f"> Confluence macro omitted: `{macro}`\n\n{body}" if body else f"> Confluence macro omitted: `{macro}`"
@@ -168,6 +187,17 @@ def _render_block(node: _Node) -> str:
                 checked = _plain(status).strip().lower() in {"complete", "completed", "done"} if status else False
                 tasks.append(f"- [{'x' if checked else ' '}] {_inline(body).strip() if body else _inline(child).strip()}")
         return "\n".join(tasks)
+    if node.name in {"ac:decision-list", "ac:decisionlist"}:
+        decisions = []
+        for child in node.children:
+            if not isinstance(child, _Node) or child.name not in {"ac:decision", "ac:decision-item"}:
+                continue
+            status = next((item for item in child.children if isinstance(item, _Node) and item.name in {"ac:decision-status", "ac:status"}), None)
+            body = next((item for item in child.children if isinstance(item, _Node) and item.name in {"ac:decision-body", "ac:decision-text"}), None)
+            status_text = _plain(status).strip().lower() if status else ""
+            icon = "✓" if status_text in DECISION_STATUSES else "×" if status_text in {"rejected", "cancelled", "canceled"} else "□"
+            decisions.append(f'<div class="decision-item"><span class="decision-icon">{icon}</span><span>{_inline(body).strip() if body else _inline(child).strip()}</span></div>')
+        return "\n\n".join(decisions)
     if node.name.startswith("ac:"):
         return _render_children(node)
     if node.name in {"p", "div", "section", "article"}:
@@ -189,7 +219,7 @@ def _render_block(node: _Node) -> str:
                 index += 1
         return "\n".join(lines)
     if node.name == "pre":
-        return f"```\n{_plain(node).strip()}\n```"
+        return f"```\n{_raw_text(node).strip()}\n```"
     if node.name == "table":
         return _simple_table(node) or _sanitized_html(node)
     return _inline(node).strip()
