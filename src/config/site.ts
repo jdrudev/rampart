@@ -1,20 +1,20 @@
 export const siteCopy = {
   siteName: 'RAMPART',
-  defaultTitle: 'Rampart',
-  defaultDescription: 'Security engineering notes, lessons learned, and practical systems thinking.',
+  defaultTitle: 'RAMPART',
+  defaultDescription: 'A digital garden for building a career in cybersecurity through hands-on work, research, and reflection.',
   navigation: { posts: 'Posts' },
-  footer: { label: 'Security engineering notes' },
+  footer: { label: 'jdru.dev' },
   home: {
     eyebrow: 'Home Lab / Research / HTB / Findings',
     title: 'Rampart',
-    introduction: 'My personal space and digital garden to write about my learning and development from projects',
+    introduction: 'A working record of building a career in cybersecurity: home lab experiments, Hack The Box practice, research, ideas, and personal projects.',
     browsePosts: 'Browse posts',
     recentPosts: 'Recent posts',
     allPosts: 'All posts'
   },
   posts: {
     title: 'Rampart:',
-    titleLineTwo: 'All my projects',
+    titleLineTwo: 'All my projects...',
     searchPlaceholder: 'Search here ...',
     allFilter: 'All',
     emptySearch: 'No posts match that search.',
